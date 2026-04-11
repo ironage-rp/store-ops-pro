@@ -21,6 +21,70 @@
     </script>
     <style>
         body { background-color: #0f172a; color: #f8fafc; overflow: hidden; }
+
+        /* ── Password Gate ── */
+        #gate-overlay {
+            position: fixed; inset: 0; z-index: 9999;
+            background: #0f172a;
+            display: flex; align-items: center; justify-content: center;
+            flex-direction: column; gap: 0;
+        }
+        #gate-overlay.unlocked { display: none; }
+        #gate-box {
+            background: rgba(30,41,59,0.95);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 20px;
+            padding: 48px 40px 40px;
+            width: 100%; max-width: 380px;
+            box-shadow: 0 32px 64px rgba(0,0,0,0.5);
+            text-align: center;
+        }
+        #gate-logo {
+            font-family: 'Manrope', sans-serif;
+            font-weight: 900; font-size: 28px;
+            letter-spacing: -1px; color: #f8fafc;
+            margin-bottom: 6px;
+        }
+        #gate-subtitle {
+            font-size: 12px; color: #94a3b8;
+            letter-spacing: 3px; text-transform: uppercase;
+            margin-bottom: 36px;
+        }
+        #gate-input {
+            width: 100%; background: #0f172a;
+            border: 1.5px solid rgba(255,255,255,0.1);
+            border-radius: 10px; padding: 14px 16px;
+            color: #f8fafc; font-size: 15px;
+            text-align: center; letter-spacing: 4px;
+            outline: none; transition: border-color 0.2s;
+            box-sizing: border-box; margin-bottom: 14px;
+        }
+        #gate-input:focus { border-color: #f97316; }
+        #gate-input.error { border-color: #ef4444; animation: shake 0.35s ease; }
+        #gate-btn {
+            width: 100%; background: #f97316;
+            color: white; font-weight: 700; font-size: 15px;
+            border: none; border-radius: 10px;
+            padding: 14px; cursor: pointer;
+            transition: background 0.2s; letter-spacing: 0.5px;
+        }
+        #gate-btn:hover { background: #ea6c0a; }
+        #gate-err {
+            font-size: 12px; color: #ef4444;
+            margin-top: 12px; min-height: 18px;
+            font-weight: 600;
+        }
+        #gate-lock-icon {
+            font-size: 40px; margin-bottom: 20px;
+            color: #f97316;
+        }
+        @keyframes shake {
+            0%,100% { transform: translateX(0); }
+            20%      { transform: translateX(-8px); }
+            40%      { transform: translateX(8px); }
+            60%      { transform: translateX(-6px); }
+            80%      { transform: translateX(6px); }
+        }
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
@@ -93,6 +157,27 @@
     </style>
 </head>
 <body class="flex h-[100dvh] antialiased text-sm">
+
+    <!-- ── PASSWORD GATE ── -->
+    <div id="gate-overlay">
+        <div id="gate-box">
+            <div id="gate-lock-icon">
+                <span class="material-symbols-outlined" style="font-size:44px; color:#f97316;">lock</span>
+            </div>
+            <div id="gate-logo">IRON AGE</div>
+            <div id="gate-subtitle">Store Management</div>
+            <input
+                type="password"
+                id="gate-input"
+                placeholder="Enter Password"
+                autocomplete="current-password"
+                onkeydown="if(event.key==='Enter') checkPassword()"
+            >
+            <button id="gate-btn" onclick="checkPassword()">Unlock</button>
+            <div id="gate-err"></div>
+        </div>
+    </div>
+    <!-- ── END PASSWORD GATE ── -->
 
     <div id="sidebar-overlay" class="fixed inset-0 bg-black/70 z-40 hidden md:hidden transition-opacity" onclick="toggleSidebar()"></div>
 
@@ -1040,7 +1125,7 @@
                     allPdfs = await new Promise(function(res) { pdfDB.transaction('pdfs', 'readonly').objectStore('pdfs').getAll().onsuccess = function(e) { res(e.target.result); }; });
                     allFiles = await new Promise(function(res) { pdfDB.transaction('ops_files', 'readonly').objectStore('ops_files').getAll().onsuccess = function(e) { res(e.target.result); }; });
                 }
-                var backupData = { settings: db.settings, employees: db.employees, docs: db.docs, recipes: db.recipes, pdfs: allPdfs, files: allFiles, version: "4.9.4" };
+                var backupData = { settings: db.settings, employees: db.employees, docs: db.docs, recipes: db.recipes, pdfs: allPdfs, files: allFiles, version: "4.9.5" };
                 var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupData));
                 var node = document.createElement('a');
                 node.setAttribute("href", dataStr);
@@ -1255,7 +1340,67 @@
             }
         }
 
-        window.addEventListener('DOMContentLoaded', init);
+        /* ── PASSWORD GATE LOGIC ── */
+        // Password is hashed with SHA-256 — plain text never stored
+        var PASS_HASH = "259dfaa72a1ceed91f12b6a7afd7f43c2dd1f838db455e080f02c5e46171eef9";
+        var SESSION_KEY = "ops_auth_v1";
+
+        function hashPassword(str) {
+            // Simple but effective: use SubtleCrypto if available, else fallback
+            if (window.crypto && window.crypto.subtle) {
+                var encoder = new TextEncoder();
+                var data = encoder.encode(str);
+                return window.crypto.subtle.digest('SHA-256', data).then(function(buf) {
+                    return Array.from(new Uint8Array(buf)).map(function(b) {
+                        return b.toString(16).padStart(2, '0');
+                    }).join('');
+                });
+            }
+            // Fallback for very old browsers without SubtleCrypto
+            return Promise.resolve("wrong");
+        }
+
+        function checkPassword() {
+            var input = document.getElementById('gate-input');
+            var errEl = document.getElementById('gate-err');
+            var val = input.value;
+            if (!val) return;
+
+            hashPassword(val).then(function(hash) {
+                if (hash === PASS_HASH) {
+                    // Store session (expires when tab closes — sessionStorage)
+                    sessionStorage.setItem(SESSION_KEY, "1");
+                    document.getElementById('gate-overlay').classList.add('unlocked');
+                    input.value = '';
+                    errEl.textContent = '';
+                    // Init app after unlock
+                    init();
+                } else {
+                    input.classList.add('error');
+                    errEl.textContent = 'Incorrect password. Try again.';
+                    input.value = '';
+                    setTimeout(function() { input.classList.remove('error'); }, 400);
+                }
+            });
+        }
+
+        function checkSession() {
+            if (sessionStorage.getItem(SESSION_KEY) === "1") {
+                document.getElementById('gate-overlay').classList.add('unlocked');
+                return true;
+            }
+            return false;
+        }
+
+        window.addEventListener('DOMContentLoaded', function() {
+            // Focus password input on load
+            var inp = document.getElementById('gate-input');
+            if (inp) setTimeout(function() { inp.focus(); }, 100);
+            // If already authenticated this session, skip gate
+            if (checkSession()) {
+                init();
+            }
+        });
     </script>
 </body>
 </html>
