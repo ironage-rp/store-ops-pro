@@ -1,0 +1,1261 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Store Ops Pro | Management System</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Manrope:wght@500;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: { background: "#0f172a", surface: "#1e293b", primary: "#f97316", danger: "#ef4444", textMain: "#f8fafc", textMuted: "#94a3b8" },
+                    fontFamily: { sans: ['Inter', 'sans-serif'], heading: ['Manrope', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #0f172a; color: #f8fafc; overflow: hidden; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        .glass-panel { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.05); }
+        .toast { transform: translateX(100%); opacity: 0; transition: all 0.3s ease; }
+        .toast.show { transform: translateX(0); opacity: 1; }
+        .tab-btn.active { border-bottom: 2px solid #f97316; color: #f97316; }
+
+        /* FIX #7 & #8: modal display managed via JS, not Tailwind hidden+flex conflict */
+        .modal-overlay { display: none; position: fixed; inset: 0; z-index: 60; }
+        .modal-overlay.modal-open { display: flex; }
+        #signature-modal { display: none; position: fixed; inset: 0; z-index: 70; align-items: center; justify-content: center; padding: 1rem; background: rgba(0,0,0,0.9); }
+        #signature-modal.modal-open { display: flex; }
+
+        /* Preview Paper Box */
+        .paper-preview {
+            width: 8.5in; min-height: 11in; background: white; color: black;
+            margin: 0 auto; padding: 0.5in; font-family: 'Arial', sans-serif;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            box-sizing: border-box; position: relative;
+        }
+
+        /* Recipe Specific Print Styles */
+        .recipe-print-card { border: 2px solid #000; padding: 15px; margin-bottom: 15px; page-break-inside: avoid; break-inside: avoid; }
+        .recipe-print-title { font-size: 20px; font-weight: bold; border-bottom: 2px solid #000; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .recipe-print-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
+        .recipe-print-table th, .recipe-print-table td { border: 1px solid #000; padding: 6px 8px; text-align: left; }
+        .recipe-print-table th { background: #eee !important; -webkit-print-color-adjust: exact; }
+
+        /* High-Fidelity Document Layout Styles */
+        .doc-title-row { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 15px; }
+        .doc-title { font-size: 24px; font-weight: bold; }
+        .doc-logo { font-size: 28px; font-family: 'Manrope', sans-serif; font-weight: 900; letter-spacing: -1px; }
+        
+        .doc-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 13px; border: 2px solid #000; }
+        .doc-table th, .doc-table td { border: 1px solid #000; padding: 8px 10px; vertical-align: top; }
+        
+        .doc-header-black { background-color: #000 !important; color: #fff !important; text-align: center; font-weight: bold; padding: 6px; font-size: 14px; -webkit-print-color-adjust: exact; print-color-adjust: exact; border: 2px solid #000; margin-bottom: -2px; position: relative; z-index: 1;}
+        .doc-header-gray { background-color: #e5e7eb !important; font-weight: bold; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        .doc-box { border: 2px solid #000; padding: 12px; margin-bottom: 15px; font-size: 13px; line-height: 1.5; white-space: pre-wrap; }
+        
+        .chk { font-family: Arial, sans-serif; font-size: 16px; font-weight: bold; margin-right: 4px; }
+        
+        .sign-area { display: flex; justify-content: space-between; margin-top: 30px; font-size: 13px; font-weight: bold; }
+        .sign-line { border-bottom: 1px solid #000; width: 45%; position: relative; height: 40px; display: flex; align-items: flex-end; padding-bottom: 2px;}
+        .sign-img { position: absolute; bottom: 5px; left: 10px; max-height: 50px; max-width: 90%; }
+
+        #print-section { display: none; }
+        @media print {
+            @page { size: letter; margin: 0.5in; }
+            body * { visibility: hidden; }
+            #print-section, #print-section * { visibility: visible; }
+            #print-section { display: block; position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 0; }
+            .paper-preview { box-shadow: none; width: 100%; padding: 0; margin: 0; }
+            .no-print-area { display: none !important; }
+            .recipe-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+            .food-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
+            /* FIX #2: Force all text to solid black when printing — prevents gray/faded output */
+            #print-section * {
+                color: #000 !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            #print-section .doc-header-black,
+            #print-section .doc-header-black * { color: #fff !important; background-color: #000 !important; }
+            #print-section .doc-header-gray,
+            #print-section .doc-header-gray * { background-color: #e5e7eb !important; color: #000 !important; }
+            #print-section .recipe-print-table th { background: #eee !important; color: #000 !important; }
+        }
+    </style>
+</head>
+<body class="flex h-[100dvh] antialiased text-sm">
+
+    <div id="sidebar-overlay" class="fixed inset-0 bg-black/70 z-40 hidden md:hidden transition-opacity" onclick="toggleSidebar()"></div>
+
+    <aside id="sidebar" class="fixed inset-y-0 left-0 w-64 bg-surface border-r border-white/5 flex flex-col no-print z-50 transform -translate-x-full md:relative md:translate-x-0 transition-transform duration-300 ease-in-out h-full">
+        <div class="h-16 md:h-20 flex items-center px-6 border-b border-white/5 justify-between md:justify-start min-w-0">
+            <div class="flex items-center min-w-0">
+                <span class="material-symbols-outlined text-primary text-3xl mr-3 shrink-0">storefront</span>
+                <h1 class="font-heading font-extrabold text-xl tracking-wide truncate" id="sidebar-store-name">IRON AGE</h1>
+            </div>
+            <button onclick="toggleSidebar()" class="md:hidden text-textMuted hover:text-white p-2 rounded shrink-0"><span class="material-symbols-outlined">close</span></button>
+        </div>
+        <nav class="flex-1 p-4 pb-8 space-y-1 overflow-y-auto" id="sidebar-nav">
+            <button onclick="switchMainTab('dashboard')" id="nav-dashboard" class="nav-btn w-full flex items-center px-4 py-3 bg-primary/10 text-primary border-r-4 border-primary rounded-lg font-medium transition-all"><span class="material-symbols-outlined mr-3">dashboard</span> Dashboard</button>
+            <button onclick="switchMainTab('employees')" id="nav-employees" class="nav-btn w-full flex items-center px-4 py-3 text-textMuted hover:bg-white/5 hover:text-textMain rounded-lg font-medium transition-all"><span class="material-symbols-outlined mr-3">badge</span> Employees</button>
+            <button onclick="switchMainTab('templates')" id="nav-templates" class="nav-btn w-full flex items-center px-4 py-3 text-textMuted hover:bg-white/5 hover:text-textMain rounded-lg font-medium transition-all"><span class="material-symbols-outlined mr-3">description</span> Templates</button>
+            <button onclick="switchMainTab('recipes')" id="nav-recipes" class="nav-btn w-full flex items-center px-4 py-3 text-textMuted hover:bg-white/5 hover:text-textMain rounded-lg font-medium transition-all"><span class="material-symbols-outlined mr-3">menu_book</span> Recipes</button>
+            <button onclick="switchMainTab('static')" id="nav-static" class="nav-btn w-full flex items-center px-4 py-3 text-textMuted hover:bg-white/5 hover:text-textMain rounded-lg font-medium transition-all"><span class="material-symbols-outlined mr-3">library_books</span> Saved Files</button>
+            <button onclick="switchMainTab('uploadDocs')" id="nav-uploadDocs" class="nav-btn w-full flex items-center px-4 py-3 text-textMuted hover:bg-white/5 hover:text-textMain rounded-lg font-medium transition-all"><span class="material-symbols-outlined mr-3">folder_shared</span> Staff Docs</button>
+            <button onclick="switchMainTab('settings')" id="nav-settings" class="nav-btn w-full flex items-center px-4 py-3 text-textMuted hover:bg-white/5 hover:text-textMain rounded-lg font-medium transition-all mt-8"><span class="material-symbols-outlined mr-3">settings</span> Settings & Data</button>
+        </nav>
+    </aside>
+
+    <main class="flex-1 flex flex-col h-full bg-background relative overflow-hidden">
+        <header class="h-16 md:h-20 glass-panel shrink-0 z-30 flex items-center px-4 md:px-8 border-b border-white/5 justify-between w-full">
+            <div class="flex items-center gap-4 min-w-0">
+                <button onclick="toggleSidebar()" class="md:hidden text-white hover:text-primary transition-colors flex items-center p-1 shrink-0"><span class="material-symbols-outlined text-3xl">menu</span></button>
+                <h2 id="page-title" class="text-xl md:text-2xl font-heading font-bold truncate">Dashboard</h2>
+            </div>
+            <div id="header-alert" class="hidden text-danger font-bold flex items-center gap-2 bg-danger/10 px-3 py-2 rounded-full text-xs shrink-0">
+                <span class="material-symbols-outlined text-[18px]">notifications_active</span> <span id="header-alert-text" class="hidden sm:inline"></span>
+            </div>
+        </header>
+
+        <div class="flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-12 w-full" id="main-scroll-area">
+            <div class="max-w-6xl mx-auto w-full">
+                
+                <!-- DASHBOARD -->
+                <div id="view-dashboard" class="space-y-4 md:space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 min-w-0">
+                        <div class="glass-panel p-5 md:p-6 rounded-xl border-l-4 border-primary min-w-0"><h3 class="text-textMuted text-xs font-bold uppercase tracking-widest mb-2 truncate">Total Employees</h3><p class="text-3xl md:text-4xl font-black" id="dash-emp-count">0</p></div>
+                        <!-- FIX #4 & #10: At-Risk now calculated properly in updateDashboard() -->
+                        <div class="glass-panel p-5 md:p-6 rounded-xl border-l-4 border-danger min-w-0"><h3 class="text-textMuted text-xs font-bold uppercase tracking-widest mb-2 truncate">At-Risk (3+ Warnings)</h3><p class="text-3xl md:text-4xl font-black text-danger" id="dash-warn-count">0</p></div>
+                        <div class="glass-panel p-5 md:p-6 rounded-xl border-l-4 border-blue-500 min-w-0"><h3 class="text-textMuted text-xs font-bold uppercase tracking-widest mb-2 truncate">Total Documents</h3><p class="text-3xl md:text-4xl font-black" id="dash-doc-count">0</p></div>
+                    </div>
+                    <div class="glass-panel rounded-xl p-5 md:p-6 min-w-0">
+                        <h3 class="text-lg font-bold mb-4 flex items-center gap-2 truncate"><span class="material-symbols-outlined text-blue-400 shrink-0">event_available</span> Today's Time-Off</h3>
+                        <div id="dash-timeoff-list" class="space-y-3 text-textMuted"></div>
+                    </div>
+                </div>
+
+                <!-- EMPLOYEES -->
+                <div id="view-employees" class="hidden space-y-4 md:space-y-6">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-3 min-w-0">
+                        <p class="text-textMuted text-xs md:text-sm">Manage staff and their records.</p>
+                        <button onclick="openEmpForm()" class="w-full sm:w-auto justify-center bg-primary text-white px-4 py-3 md:py-2 rounded-lg font-bold flex items-center gap-2 transition shrink-0"><span class="material-symbols-outlined">person_add</span> Add Employee</button>
+                    </div>
+                    <div id="emp-editor-section" class="hidden space-y-4 md:space-y-6">
+                        <form id="emp-form" class="glass-panel p-4 md:p-6 rounded-xl border border-primary/30 w-full" onsubmit="saveEmployee(event)">
+                            <!-- FIX #8: title now dynamically set to "Add Employee" or "Edit Employee" -->
+                            <h3 id="emp-form-title" class="text-lg font-bold mb-4 text-primary">Add Employee</h3>
+                            <input type="hidden" id="emp-id">
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4 w-full">
+                                <div><label class="block text-xs text-textMuted mb-1 truncate">Name *</label><input type="text" id="emp-name" required class="w-full bg-surface border border-white/10 rounded px-3 py-2 text-white min-w-0"></div>
+                                <div><label class="block text-xs text-textMuted mb-1 truncate">Position *</label><input type="text" id="emp-pos" required class="w-full bg-surface border border-white/10 rounded px-3 py-2 text-white min-w-0"></div>
+                                <div><label class="block text-xs text-textMuted mb-1 truncate">Phone</label><input type="text" id="emp-phone" class="w-full bg-surface border border-white/10 rounded px-3 py-2 text-white min-w-0"></div>
+                                <div><label class="block text-xs text-textMuted mb-1 truncate">Email</label><input type="email" id="emp-email" class="w-full bg-surface border border-white/10 rounded px-3 py-2 text-white min-w-0"></div>
+                                <div><label class="block text-xs text-textMuted mb-1 truncate">Hire Date</label><input type="date" id="emp-hire" class="w-full bg-surface border border-white/10 rounded px-3 py-2 text-white [color-scheme:dark] min-w-0"></div>
+                                <div><label class="block text-xs text-textMuted mb-1 truncate">Wage</label><input type="text" id="emp-wage" class="w-full bg-surface border border-white/10 rounded px-3 py-2 text-white min-w-0"></div>
+                                <div class="md:col-span-2 lg:col-span-3 min-w-0"><label class="block text-xs text-textMuted mb-1 truncate">Memo</label><input type="text" id="emp-memo" class="w-full bg-surface border border-white/10 rounded px-3 py-2 text-white min-w-0"></div>
+                            </div>
+                            <div class="flex justify-end gap-2">
+                                <button type="button" onclick="closeEmpForm()" class="px-4 py-2 bg-white/10 rounded">Close</button>
+                                <button type="submit" class="px-4 py-2 bg-primary text-white rounded font-bold">Save</button>
+                            </div>
+                        </form>
+                        <!-- FIX #11: renderLinkedAssets now shows both docs AND ops_files -->
+                        <div id="emp-linked-assets" class="glass-panel p-4 md:p-6 rounded-xl border border-white/10 space-y-2 max-h-[300px] overflow-y-auto"></div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 min-w-0" id="emp-list"></div>
+                </div>
+
+                <!-- TEMPLATES -->
+                <div id="view-templates" class="hidden space-y-4 md:space-y-6">
+                    <div class="flex gap-4 border-b border-white/10 pb-2 overflow-x-auto whitespace-nowrap scrollbar-hide min-w-0">
+                        <button onclick="switchTemplate('CORRECTIVE')" id="tab-CORRECTIVE" class="tab-btn active pb-2 font-bold text-sm shrink-0">Corrective Action</button>
+                        <button onclick="switchTemplate('NOCALL')" id="tab-NOCALL" class="tab-btn text-textMuted pb-2 font-bold text-sm shrink-0">No Call No Show</button>
+                        <button onclick="switchTemplate('TIMEOFF')" id="tab-TIMEOFF" class="tab-btn text-textMuted pb-2 font-bold text-sm shrink-0">Time Off</button>
+                        <button onclick="switchTemplate('VERIFICATION')" id="tab-VERIFICATION" class="tab-btn text-textMuted pb-2 font-bold text-sm shrink-0">Verification</button>
+                    </div>
+                    <div id="tpl-list-container" class="space-y-4">
+                        <div class="flex justify-between items-center">
+                            <p class="text-xs text-textMuted">Generate official documents.</p>
+                            <button onclick="openTplForm(true)" class="bg-white text-black px-4 py-2 rounded-lg font-bold flex items-center gap-2 transition shrink-0"><span class="material-symbols-outlined">add</span> Create New</button>
+                        </div>
+                        <div class="glass-panel rounded-xl overflow-x-auto">
+                            <div class="min-w-[700px]">
+                                <!-- FIX #9: col-span aligned — header and rows both use 2+3+5+2=12 -->
+                                <div class="grid grid-cols-12 bg-white/5 px-6 py-3 text-xs font-bold text-textMuted uppercase border-b border-white/5">
+                                    <div class="col-span-2">Date</div>
+                                    <div class="col-span-3">Employee</div>
+                                    <div class="col-span-5">Summary</div>
+                                    <div class="col-span-2 text-right">Actions</div>
+                                </div>
+                                <div id="tpl-list" class="divide-y divide-white/5 min-h-[100px]"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="tpl-form-container" class="hidden glass-panel p-5 md:p-8 rounded-xl border border-white/10 relative">
+                        <button onclick="closeTplForm()" class="absolute top-4 right-4 text-textMuted hover:text-white p-2"><span class="material-symbols-outlined">close</span></button>
+                        <h3 id="tpl-form-title" class="text-xl font-bold mb-6 text-primary">Create Document</h3>
+                        <div class="mb-6 w-full md:w-1/2"><label class="block text-xs font-bold text-textMuted mb-2">Select Employee *</label><select id="common-emp-select" onchange="autoFillHireDate()" class="w-full bg-surface border border-white/10 rounded-lg p-3 text-white focus:border-primary"></select></div>
+                        <div id="tpl-form-actual">
+                            <form id="form-CORRECTIVE" class="hidden tpl-form space-y-4" onsubmit="saveDocCorrective(event)">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div><label class="block text-xs text-textMuted mb-1">Today's Date (Document Date) *</label><input type="date" id="ca-date" required class="w-full bg-surface border border-white/10 rounded p-3 text-white [color-scheme:dark]"></div>
+                                    <div><label class="block text-xs text-textMuted mb-1">Supervisor Name *</label><input type="text" id="ca-sup" required class="w-full bg-surface border border-white/10 rounded p-3 text-white"></div>
+                                    <select id="ca-level" required class="md:col-span-2 bg-surface border border-white/10 rounded p-3 text-white"><option value="Verbal Warning/Counseling">Verbal Warning/Counseling</option><option value="Written Warning/Reprimand">Written Warning/Reprimand</option><option value="Suspension">Suspension</option><option value="Termination">Termination</option></select>
+                                    <input type="text" id="ca-type" required placeholder="Incident Type" class="md:col-span-2 bg-surface border border-white/10 rounded p-3 text-white">
+                                    <textarea id="ca-facts" required rows="3" placeholder="Facts & Details" class="md:col-span-2 bg-surface border border-white/10 rounded p-3 text-white"></textarea>
+                                    <textarea id="ca-exp" rows="2" placeholder="Employee Explanation" class="md:col-span-2 bg-surface border border-white/10 rounded p-3 text-white"></textarea>
+                                    <textarea id="ca-plan" required rows="2" placeholder="Expectations / Improvement Plan" class="md:col-span-2 bg-surface border border-white/10 rounded p-3 text-white"></textarea>
+                                    <input type="text" id="ca-action" placeholder="Action Taken" class="md:col-span-2 bg-surface border border-white/10 rounded p-3 text-white">
+                                    <input type="text" id="ca-next" required value="Further warning may result in suspension or termination." class="md:col-span-2 bg-surface border border-white/10 rounded p-3 text-white">
+                                </div>
+                                <button type="submit" class="w-full bg-primary py-3 rounded-lg font-bold">Save Document</button>
+                            </form>
+                            <form id="form-NOCALL" class="hidden tpl-form space-y-4" onsubmit="saveDocNoCall(event)">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div><label class="block text-xs text-textMuted mb-1">Today's Date (Write-Up Date) *</label><input type="date" id="nc-date" required class="w-full bg-surface border border-white/10 rounded p-3 text-white [color-scheme:dark]"></div>
+                                    <div><label class="block text-xs text-textMuted mb-1">Supervisor Name *</label><input type="text" id="nc-sup" required class="w-full bg-surface border border-white/10 rounded p-3 text-white"></div>
+                                    <div><label class="block text-xs text-textMuted mb-1">Violation Date (Day They No-Showed) *</label><input type="date" id="nc-viodate" required class="w-full bg-surface border border-white/10 rounded p-3 text-white [color-scheme:dark]"></div>
+                                    <div><label class="block text-xs text-textMuted mb-1">Scheduled Shift Time *</label><input type="time" id="nc-viotime" required class="w-full bg-surface border border-white/10 rounded p-3 text-white [color-scheme:dark]"></div>
+                                    <select id="nc-warns" class="bg-surface border border-white/10 rounded p-3 text-white"><option>One</option><option>Two</option><option>Three</option></select>
+                                    <!-- FIX #11: renamed nc-action-taken to avoid ambiguity with field name -->
+                                    <select id="nc-action-taken" class="bg-surface border border-white/10 rounded p-3 text-white"><option>Warning</option><option>Probation</option><option>Suspension</option><option>Dismissal</option><option>Other</option></select>
+                                    <textarea id="nc-desc" required rows="2" class="md:col-span-2 bg-surface border border-white/10 rounded p-3 text-white">He did not come to his shift day without notice and permission.</textarea>
+                                    <textarea id="nc-plan" required rows="2" class="md:col-span-2 bg-surface border border-white/10 rounded p-3 text-white">Please manage your schedule responsibly.</textarea>
+                                </div>
+                                <button type="submit" class="w-full bg-primary py-3 rounded-lg font-bold">Save Document</button>
+                            </form>
+                            <form id="form-TIMEOFF" class="hidden tpl-form space-y-4" onsubmit="saveDocTimeOff(event)">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div><label class="block text-xs text-textMuted mb-1">Today's Date (Request Date) *</label><input type="date" id="to-date" required class="w-full bg-surface border border-white/10 rounded p-3 text-white [color-scheme:dark]"></div>
+                                    <div><label class="block text-xs text-textMuted mb-1">Leave Type</label><select id="to-type" class="w-full bg-surface border border-white/10 rounded p-3 text-white"><option>Vacation</option><option>Personal Leave</option><option>Other</option></select></div>
+                                    <div><label class="block text-xs text-textMuted mb-1">First Day Off *</label><input type="date" id="to-start" required onchange="calcTimeOffDays()" class="w-full bg-surface border border-white/10 rounded p-3 text-white [color-scheme:dark]"></div>
+                                    <div><label class="block text-xs text-textMuted mb-1">Last Day Off *</label><input type="date" id="to-end" required onchange="calcTimeOffDays()" class="w-full bg-surface border border-white/10 rounded p-3 text-white [color-scheme:dark]"></div>
+                                    <div class="md:col-span-2"><label class="block text-xs text-textMuted mb-1">Total Days Requested (auto-calculated)</label><input type="number" id="to-days" readonly class="w-full bg-surface/50 border border-white/10 rounded p-3 text-white/50"></div>
+                                    <div class="md:col-span-2"><label class="block text-xs text-textMuted mb-1">Return to Work Date *</label><input type="date" id="to-return" required class="w-full bg-surface border border-white/10 rounded p-3 text-white [color-scheme:dark]"></div>
+                                    <textarea id="to-comments" rows="2" placeholder="Comments" class="md:col-span-2 bg-surface border border-white/10 rounded p-3 text-white"></textarea>
+                                    <select id="to-approve" class="md:col-span-2 bg-surface border border-primary/50 rounded p-3 text-white font-bold"><option value="PENDING">PENDING</option><option value="YES">APPROVED</option><option value="NO">DENIED</option></select>
+                                </div>
+                                <button type="submit" class="w-full bg-primary py-3 rounded-lg font-bold">Save Request</button>
+                            </form>
+                            <form id="form-VERIFICATION" class="hidden tpl-form space-y-4" onsubmit="saveDocVerification(event)">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div><label class="block text-xs text-textMuted mb-1">Today's Date (Letter Date) *</label><input type="date" id="ev-date" required class="w-full bg-surface border border-white/10 rounded p-3 text-white [color-scheme:dark]"></div>
+                                    <div><label class="block text-xs text-textMuted mb-1">Employment Status</label><select id="ev-status" onchange="toggleEvEndDate()" class="w-full bg-surface border border-white/10 rounded p-3 text-white"><option value="Current">Currently Employed</option><option value="Former">Former Employee</option></select></div>
+                                    <div><label class="block text-xs text-textMuted mb-1">Hire Date (Start of Employment) *</label><input type="date" id="ev-start" required class="w-full bg-surface border border-white/10 rounded p-3 text-white [color-scheme:dark]"></div>
+                                    <div><label class="block text-xs text-textMuted mb-1">End Date (Former employees only)</label><input type="date" id="ev-end" disabled class="w-full bg-surface/50 border border-white/10 rounded p-3 text-white/50"></div>
+                                    <input type="text" id="ev-mgr-name" required placeholder="Manager Name" class="bg-surface border border-white/10 rounded p-3 text-white">
+                                    <input type="text" id="ev-mgr-title" required placeholder="Manager Title" class="bg-surface border border-white/10 rounded p-3 text-white">
+                                    <input type="text" id="ev-mgr-phone" required placeholder="Manager Phone" class="bg-surface border border-white/10 rounded p-3 text-white">
+                                    <input type="email" id="ev-mgr-email" required placeholder="Manager Email" class="bg-surface border border-white/10 rounded p-3 text-white">
+                                </div>
+                                <button type="submit" class="w-full bg-primary py-3 rounded-lg font-bold">Save Letter</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RECIPES -->
+                <div id="view-recipes" class="hidden space-y-4 md:space-y-6">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-3">
+                        <p class="text-textMuted text-xs md:text-sm">Manage Bar & Kitchen Recipes.</p>
+                        <div class="flex flex-wrap gap-2 w-full sm:w-auto justify-end">
+                            <button onclick="printRecipeCategory('COCKTAIL')" class="flex-1 sm:flex-initial bg-blue-600 text-white px-3 py-2 rounded-lg font-bold flex items-center justify-center gap-1 text-xs sm:text-sm"><span class="material-symbols-outlined text-[18px]">local_bar</span> Print Bar</button>
+                            <button onclick="printRecipeCategory('FOOD')" class="flex-1 sm:flex-initial bg-green-600 text-white px-3 py-2 rounded-lg font-bold flex items-center justify-center gap-1 text-xs sm:text-sm"><span class="material-symbols-outlined text-[18px]">restaurant</span> Print Kitchen</button>
+                            <button onclick="openRecipeForm()" class="w-full sm:w-auto bg-primary text-white px-4 py-2 rounded-lg font-bold flex items-center justify-center gap-2 transition text-sm"><span class="material-symbols-outlined">add</span> Add Recipe</button>
+                        </div>
+                    </div>
+                    <div id="recipe-editor" class="hidden glass-panel p-4 md:p-6 rounded-xl border border-primary/30 space-y-4">
+                        <h3 id="recipe-form-title" class="text-lg font-bold text-primary">Add Recipe</h3>
+                        <input type="hidden" id="recipe-id">
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div><label class="block text-xs text-textMuted mb-1">Recipe Type *</label><select id="recipe-type" onchange="toggleRecipeType()" class="w-full bg-surface border border-white/10 rounded p-3 text-white"><option value="COCKTAIL">Cocktail (Card Style)</option><option value="FOOD">Food (Table Style)</option></select></div>
+                            <div><label class="block text-xs text-textMuted mb-1">Category *</label><input type="text" id="recipe-cat" placeholder="Classic" class="w-full bg-surface border border-white/10 rounded p-3 text-white"></div>
+                            <div class="lg:col-span-2"><label class="block text-xs text-textMuted mb-1">Recipe Name *</label><input type="text" id="recipe-name" required class="w-full bg-surface border border-white/10 rounded p-3 text-white"></div>
+                        </div>
+                        <div id="recipe-cocktail-fields" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <input type="text" id="recipe-glass" placeholder="Glassware" class="bg-surface border border-white/10 rounded p-3 text-white">
+                            <input type="text" id="recipe-method" placeholder="Method" class="bg-surface border border-white/10 rounded p-3 text-white">
+                            <input type="text" id="recipe-garnish" placeholder="Garnish" class="bg-surface border border-white/10 rounded p-3 text-white">
+                        </div>
+                        <div id="recipe-food-fields" class="hidden"><input type="text" id="recipe-yield" placeholder="Yield" class="w-full bg-surface border border-white/10 rounded p-3 text-white"></div>
+                        <textarea id="recipe-instructions" rows="2" placeholder="Instructions" class="w-full bg-surface border border-white/10 rounded p-3 text-white"></textarea>
+                        <div class="space-y-2">
+                            <label class="block text-xs font-bold text-textMuted uppercase">Ingredients</label>
+                            <div id="ingredient-list" class="space-y-2"></div>
+                            <button type="button" onclick="addIngredientRow()" class="text-primary font-bold flex items-center gap-1 text-xs"><span class="material-symbols-outlined text-[18px]">add_circle</span> Add Ingredient</button>
+                        </div>
+                        <div class="flex justify-end gap-2 pt-4 border-t border-white/10">
+                            <button type="button" onclick="closeRecipeForm()" class="px-4 py-2 bg-white/10 rounded">Cancel</button>
+                            <button type="button" onclick="saveRecipe()" class="px-6 py-2 bg-primary text-white rounded font-bold">Save Recipe</button>
+                        </div>
+                    </div>
+                    <div id="recipe-list-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+                </div>
+
+                <!-- SAVED FILES (formerly Saved Files) -->
+                <div id="view-static" class="hidden space-y-4 md:space-y-6">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                        <p class="text-xs md:text-sm text-textMuted">Store manuals and reference PDFs for quick access.</p>
+                        <button onclick="openPdfForm()" class="w-full sm:w-auto bg-blue-600 text-white px-4 py-2 rounded-lg font-bold flex items-center justify-center gap-2"><span class="material-symbols-outlined">upload_file</span> Upload PDF</button>
+                    </div>
+                    <form id="pdf-form" class="hidden glass-panel p-4 md:p-6 rounded-xl border border-blue-500/30 mb-6 w-full" onsubmit="savePdfDoc(event)">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <input type="text" id="pdf-title" required class="md:col-span-2 bg-surface border border-white/10 rounded p-3 text-white" placeholder="Document Title">
+                            <input type="file" id="pdf-file" accept="application/pdf" required class="md:col-span-2 bg-surface border border-white/10 rounded p-2 text-white">
+                        </div>
+                        <div class="flex justify-end gap-2">
+                            <button type="button" onclick="closePdfForm()" class="px-4 py-2 bg-white/10 rounded">Cancel</button>
+                            <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded font-bold" id="pdf-save-btn">Save</button>
+                        </div>
+                    </form>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6" id="pdf-list"></div>
+                </div>
+
+                <!-- STAFF DOCS (formerly Staff Docs) -->
+                <div id="view-uploadDocs" class="hidden space-y-4 md:space-y-6">
+                    <div class="flex justify-between items-center">
+                        <p class="text-xs md:text-sm text-textMuted">Store staff ID cards, health certificates, and other documents.</p>
+                        <button onclick="openGeneralFileForm()" class="bg-primary text-white px-4 py-2 rounded-lg font-bold flex items-center gap-2 transition shrink-0"><span class="material-symbols-outlined">add_to_photos</span> Upload File</button>
+                    </div>
+                    <form id="file-upload-form" class="hidden glass-panel p-4 md:p-6 rounded-xl border border-primary/30 mb-6" onsubmit="saveGeneralFile(event)">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <input type="text" id="file-title" required class="md:col-span-2 bg-surface border border-white/10 rounded p-3 text-white" placeholder="File Name">
+                            <input type="file" id="file-input" required class="bg-surface border border-white/10 rounded p-2 text-white">
+                            <select id="file-link-emp" class="bg-surface border border-white/10 rounded p-3 text-white"></select>
+                        </div>
+                        <div class="flex justify-end gap-2">
+                            <button type="button" onclick="closeGeneralFileForm()" class="px-4 py-2 bg-white/10 rounded">Cancel</button>
+                            <button type="submit" id="file-save-btn" class="px-4 py-2 bg-primary text-white rounded font-bold">Save</button>
+                        </div>
+                    </form>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6" id="general-file-list"></div>
+                </div>
+                
+                <!-- SETTINGS -->
+                <div id="view-settings" class="hidden max-w-2xl space-y-6 pb-10">
+                    <div class="glass-panel p-6 md:p-8 rounded-xl space-y-6 w-full">
+                        <h3 class="text-xl font-bold border-b border-white/10 pb-2">App Settings</h3>
+                        <input type="text" id="set-store" class="w-full bg-surface border border-white/10 rounded-lg p-3 text-white">
+                        <button onclick="saveSettings()" class="w-full bg-white text-black py-3 rounded-lg font-bold">Save Settings</button>
+                        <h3 class="text-xl font-bold border-b border-white/10 pb-2 mt-10">Backup & Restore</h3>
+                        <!-- FIX #6: importData now properly restores IndexedDB pdfs and files -->
+                        <div class="flex flex-col sm:flex-row gap-4 mt-4">
+                            <button onclick="exportData()" class="flex-1 bg-blue-600/20 text-blue-400 py-3 rounded-lg font-bold">Full Backup (.json)</button>
+                            <label class="flex-1 bg-danger/20 text-danger py-3 rounded-lg font-bold text-center cursor-pointer">Restore<input type="file" id="import-file" accept=".json" class="hidden" onchange="importData(event)"></label>
+                        </div>
+                    </div>
+                </div>
+                
+            </div>
+        </div>
+    </main>
+
+    <!-- FIX #7: preview-modal uses custom .modal-overlay class instead of hidden+flex -->
+    <div id="preview-modal" class="modal-overlay bg-black/95 z-[60] flex-col no-print">
+        <div class="h-auto md:h-16 border-b border-white/10 flex flex-col md:flex-row items-center justify-between p-3 md:px-6 bg-surface/90 backdrop-blur shrink-0 gap-3 w-full">
+            <h3 class="font-bold text-lg hidden md:block w-1/4">Preview</h3>
+            <div class="flex gap-2 overflow-x-auto w-full md:w-auto pb-2 md:pb-0 scrollbar-hide justify-center">
+                <button onclick="openSignature('emp')" id="btn-sign-emp" class="shrink-0 bg-blue-600 text-white px-3 py-2 rounded font-bold flex items-center gap-2 text-xs"><span class="material-symbols-outlined text-[16px]">draw</span> Emp Sign</button>
+                <button onclick="openSignature('mgr')" id="btn-sign-mgr" class="shrink-0 bg-green-600 text-white px-3 py-2 rounded font-bold flex items-center gap-2 text-xs"><span class="material-symbols-outlined text-[16px]">draw</span> Mgr Sign</button>
+                <button onclick="executePrint()" class="shrink-0 bg-white text-black px-3 py-2 rounded font-bold flex items-center gap-2 text-xs"><span class="material-symbols-outlined text-[16px]">print</span> Print</button>
+                <button onclick="closePreview()" class="shrink-0 px-4 py-2 rounded bg-white/10 hover:bg-white/20 font-bold ml-auto text-xs">Close</button>
+            </div>
+        </div>
+        <div class="flex-1 overflow-auto p-4 md:p-8 flex justify-center items-start w-full pb-24" id="preview-scroll-area">
+            <div id="preview-content" class="paper-preview w-full max-w-full overflow-x-auto"></div>
+        </div>
+    </div>
+
+    <!-- FIX #8: signature-modal uses custom class instead of hidden+flex -->
+    <div id="signature-modal">
+        <div class="bg-white p-5 rounded-xl w-full max-w-lg flex flex-col">
+            <h3 class="font-bold text-xl text-black mb-2" id="sig-title">Sign Here</h3>
+            <canvas id="sig-canvas" class="touch-none w-full h-[200px] border border-gray-300"></canvas>
+            <div class="flex justify-between mt-4">
+                <button onclick="clearSignature()" class="text-gray-500 font-bold">Clear</button>
+                <div class="flex gap-2">
+                    <button onclick="closeSignature()" class="bg-gray-200 text-black px-4 py-2 rounded font-bold">Cancel</button>
+                    <button onclick="saveSignature()" class="bg-primary text-white px-6 py-2 rounded font-bold">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast-container" class="fixed bottom-6 right-6 md:bottom-8 md:right-8 z-50 flex flex-col gap-3"></div>
+    <div id="print-section"></div>
+
+    <script>
+        var db = { 
+            settings: JSON.parse(localStorage.getItem('ops_settings')) || { storeName: "IRON AGE" }, 
+            employees: JSON.parse(localStorage.getItem('ops_emps')) || [], 
+            docs: JSON.parse(localStorage.getItem('ops_docs')) || [],
+            recipes: JSON.parse(localStorage.getItem('ops_recipes')) || []
+        };
+        var currentTplType = 'CORRECTIVE';
+        var currentPreviewDocId = null;
+        var currentSignType = null;
+        var editingDocId = null;
+        var pdfDB = null;
+
+        function init() { 
+            document.getElementById('set-store').value = db.settings.storeName; 
+            document.getElementById('sidebar-store-name').textContent = db.settings.storeName; 
+            initIndexedDB();
+            switchMainTab('dashboard'); 
+        }
+
+        function base64ToBlob(dataURI) {
+            var splitDataURI = dataURI.split(',');
+            var byteString = splitDataURI[0].indexOf('base64') >= 0 ? atob(splitDataURI[1]) : decodeURI(splitDataURI[1]);
+            var mimeString = splitDataURI[0].split(':')[1].split(';')[0];
+            var ia = new Uint8Array(byteString.length);
+            for (var i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i);
+            return new Blob([ia], { type: mimeString });
+        }
+
+        function toggleSidebar() {
+            var sb = document.getElementById('sidebar');
+            var ov = document.getElementById('sidebar-overlay');
+            if (sb.classList.contains('-translate-x-full')) {
+                sb.classList.remove('-translate-x-full');
+                ov.classList.remove('hidden');
+            } else {
+                sb.classList.add('-translate-x-full');
+                ov.classList.add('hidden');
+            }
+        }
+
+        function initIndexedDB() {
+            var request = indexedDB.open("StoreOpsDB", 2);
+            request.onupgradeneeded = function(e) {
+                var database = e.target.result;
+                if (!database.objectStoreNames.contains('pdfs')) database.createObjectStore('pdfs', { keyPath: 'id' });
+                if (!database.objectStoreNames.contains('ops_files')) database.createObjectStore('ops_files', { keyPath: 'id' });
+            };
+            request.onsuccess = function(e) {
+                pdfDB = e.target.result;
+                renderEmployees();
+                renderPdfs();
+                renderGeneralFiles();
+                renderRecipes();
+            };
+        }
+
+        function saveDB() { 
+            localStorage.setItem('ops_settings', JSON.stringify(db.settings)); 
+            localStorage.setItem('ops_emps', JSON.stringify(db.employees)); 
+            localStorage.setItem('ops_docs', JSON.stringify(db.docs)); 
+            localStorage.setItem('ops_recipes', JSON.stringify(db.recipes));
+        }
+
+        function switchMainTab(tabId) {
+            ['dashboard', 'employees', 'templates', 'recipes', 'static', 'uploadDocs', 'settings'].forEach(function(id) { 
+                var el = document.getElementById('view-' + id);
+                if (el) el.classList.add('hidden'); 
+            }); 
+            document.getElementById('view-' + tabId).classList.remove('hidden'); 
+            
+            var navButtons = document.querySelectorAll('.nav-btn');
+            navButtons.forEach(function(btn) {
+                var isMatch = btn.id === 'nav-' + tabId;
+                var extra = btn.id === 'nav-settings' ? ' mt-8' : '';
+                btn.className = isMatch 
+                    ? 'nav-btn w-full flex items-center px-4 py-3 bg-primary/10 text-primary border-r-4 border-primary rounded-lg font-medium transition-all' + extra
+                    : 'nav-btn w-full flex items-center px-4 py-3 text-textMuted hover:bg-white/5 hover:text-textMain rounded-lg font-medium transition-all' + extra;
+            });
+            
+            var titles = { dashboard: 'Dashboard', employees: 'Employees', templates: 'Templates', recipes: 'Recipes', static: 'Saved Files', uploadDocs: 'Staff Docs', settings: 'Settings & Data' };
+            document.getElementById('page-title').textContent = titles[tabId];
+
+            if (tabId === 'dashboard') updateDashboard();
+            if (tabId === 'employees') renderEmployees(); 
+            if (tabId === 'templates') renderTemplates(); 
+            if (tabId === 'recipes') renderRecipes(); 
+            if (tabId === 'static') renderPdfs();
+            if (tabId === 'uploadDocs') renderGeneralFiles();
+
+            if (window.innerWidth < 768) {
+                document.getElementById('sidebar').classList.add('-translate-x-full');
+                document.getElementById('sidebar-overlay').classList.add('hidden');
+            }
+        }
+
+        // FIX #4 & #10: At-Risk now counts employees with 3+ CORRECTIVE docs
+        function updateDashboard() {
+            document.getElementById('dash-emp-count').textContent = db.employees.length; 
+            document.getElementById('dash-doc-count').textContent = db.docs.length;
+
+            // Count employees with 3 or more corrective action docs
+            var warnCounts = {};
+            db.docs.forEach(function(d) {
+                if (d.type === 'CORRECTIVE') {
+                    warnCounts[d.empId] = (warnCounts[d.empId] || 0) + 1;
+                }
+            });
+            var atRiskCount = Object.values(warnCounts).filter(function(c) { return c >= 3; }).length;
+            document.getElementById('dash-warn-count').textContent = atRiskCount;
+
+            var todayStr = new Date().toISOString().split('T')[0];
+            var timeoffs = db.docs.filter(function(d) {
+                return d.type === 'TIMEOFF' && d.data.approve === 'YES' && d.data.start <= todayStr && d.data.end >= todayStr;
+            });
+            var toList = document.getElementById('dash-timeoff-list');
+            if (timeoffs.length > 0) {
+                toList.innerHTML = timeoffs.map(function(d) {
+                    var emp = db.employees.find(function(e) { return e.id === d.empId; });
+                    return '<div class="bg-surface p-3 rounded border border-white/5 flex justify-between items-center"><span class="font-bold text-white truncate max-w-[150px]">' + (emp ? emp.name : 'Unknown') + '</span><span class="text-xs bg-primary/20 text-primary px-2 py-1 rounded">' + d.data.type + '</span></div>';
+                }).join('');
+                document.getElementById('header-alert').classList.remove('hidden');
+            } else {
+                toList.innerHTML = '<p class="text-sm p-2">No time-off scheduled today.</p>';
+                document.getElementById('header-alert').classList.add('hidden');
+            }
+        }
+
+        // --- Core Helpers ---
+        function getBox(match, current) { return match === current ? '&#9745;' : '&#9744;'; }
+
+        function upsertDoc(docData) {
+            if (editingDocId) {
+                var idx = db.docs.findIndex(function(d) { return d.id === editingDocId; });
+                if (idx > -1) {
+                    var existingEmpSign = db.docs[idx].data.empSign;
+                    var existingMgrSign = db.docs[idx].data.mgrSign;
+                    var existingEmpSignDate = db.docs[idx].data.empSignDate;
+                    var existingMgrSignDate = db.docs[idx].data.mgrSignDate;
+                    db.docs[idx].empId = docData.empId;
+                    db.docs[idx].data = docData.data;
+                    if (existingEmpSign) db.docs[idx].data.empSign = existingEmpSign;
+                    if (existingMgrSign) db.docs[idx].data.mgrSign = existingMgrSign;
+                    if (existingEmpSignDate) db.docs[idx].data.empSignDate = existingEmpSignDate;
+                    if (existingMgrSignDate) db.docs[idx].data.mgrSignDate = existingMgrSignDate;
+                }
+            } else {
+                db.docs.push(docData);
+            }
+            saveDB();
+            closeTplForm();
+            renderTemplates();
+            showToast("Document saved successfully.");
+        }
+
+        function showToast(msg) { 
+            var container = document.getElementById('toast-container');
+            var el = document.createElement('div'); 
+            el.className = 'toast bg-primary text-white px-4 py-3 rounded font-bold shadow-lg text-sm';
+            el.innerText = msg; 
+            container.appendChild(el);
+            setTimeout(function() { el.classList.add('show'); }, 10);
+            setTimeout(function() { el.classList.remove('show'); setTimeout(function() { el.remove(); }, 300); }, 2500); 
+        }
+
+        // --- Recipe Management ---
+        function toggleRecipeType() {
+            var type = document.getElementById('recipe-type').value;
+            document.getElementById('recipe-cocktail-fields').classList.toggle('hidden', type !== 'COCKTAIL');
+            document.getElementById('recipe-food-fields').classList.toggle('hidden', type !== 'FOOD');
+        }
+
+        function addIngredientRow(item, qty, unit, note) {
+            item = item || ""; qty = qty || ""; unit = unit || ""; note = note || "";
+            var list = document.getElementById('ingredient-list');
+            var div = document.createElement('div');
+            div.className = "flex gap-2 items-center";
+            div.innerHTML = '<input type="text" placeholder="Item" value="' + item + '" class="flex-1 bg-surface border border-white/10 rounded p-2 text-white text-xs"><input type="text" placeholder="Qty" value="' + qty + '" class="w-16 bg-surface border border-white/10 rounded p-2 text-white text-xs"><input type="text" placeholder="Unit" value="' + unit + '" class="w-16 bg-surface border border-white/10 rounded p-2 text-white text-xs"><input type="text" placeholder="Note" value="' + note + '" class="hidden md:block flex-1 bg-surface border border-white/10 rounded p-2 text-white text-xs"><button type="button" onclick="this.parentElement.remove()" class="text-danger p-1"><span class="material-symbols-outlined text-[18px]">delete</span></button>';
+            list.appendChild(div);
+        }
+
+        function openRecipeForm(id) {
+            var form = document.getElementById('recipe-editor');
+            form.classList.remove('hidden');
+            document.getElementById('ingredient-list').innerHTML = "";
+            if (id) {
+                var r = db.recipes.find(function(x) { return x.id === id; });
+                document.getElementById('recipe-form-title').textContent = "Edit Recipe";
+                document.getElementById('recipe-id').value = r.id;
+                document.getElementById('recipe-type').value = r.type;
+                document.getElementById('recipe-cat').value = r.category;
+                document.getElementById('recipe-name').value = r.name;
+                document.getElementById('recipe-glass').value = r.glass || "";
+                document.getElementById('recipe-method').value = r.method || "";
+                document.getElementById('recipe-garnish').value = r.garnish || "";
+                document.getElementById('recipe-yield').value = r.yield || "";
+                document.getElementById('recipe-instructions').value = r.instructions;
+                r.ingredients.forEach(function(i) { addIngredientRow(i.item, i.qty, i.unit, i.note); });
+            } else {
+                document.getElementById('recipe-form-title').textContent = "Add Recipe";
+                document.getElementById('recipe-id').value = "";
+                document.getElementById('recipe-instructions').value = "";
+                addIngredientRow();
+            }
+            toggleRecipeType(); 
+        }
+
+        function closeRecipeForm() { document.getElementById('recipe-editor').classList.add('hidden'); }
+
+        function saveRecipe() {
+            var id = document.getElementById('recipe-id').value || 'recipe_' + Date.now();
+            var ingredients = [];
+            document.querySelectorAll('#ingredient-list > div').forEach(function(row) {
+                var inputs = row.querySelectorAll('input');
+                if (inputs[0].value) ingredients.push({ item: inputs[0].value, qty: inputs[1].value, unit: inputs[2].value, note: inputs[3].value });
+            });
+            var recipe = {
+                id: id,
+                type: document.getElementById('recipe-type').value,
+                category: document.getElementById('recipe-cat').value,
+                name: document.getElementById('recipe-name').value,
+                glass: document.getElementById('recipe-glass').value,
+                method: document.getElementById('recipe-method').value,
+                garnish: document.getElementById('recipe-garnish').value,
+                yield: document.getElementById('recipe-yield').value,
+                instructions: document.getElementById('recipe-instructions').value,
+                ingredients: ingredients
+            };
+            var idx = db.recipes.findIndex(function(x) { return x.id === id; });
+            if (idx > -1) db.recipes[idx] = recipe; else db.recipes.push(recipe);
+            saveDB();
+            closeRecipeForm();
+            renderRecipes();
+            showToast("Recipe saved.");
+        }
+
+        function renderRecipes() {
+            var list = document.getElementById('recipe-list-container');
+            list.innerHTML = db.recipes.map(function(r) {
+                return '<div class="glass-panel p-5 rounded-xl border border-white/10 flex flex-col justify-between"><div><div class="flex justify-between items-start mb-2"><span class="text-[10px] font-bold bg-primary/20 text-primary px-2 py-0.5 rounded uppercase">' + r.category + '</span><span class="material-symbols-outlined text-textMuted text-[18px]">' + (r.type === 'COCKTAIL' ? 'local_bar' : 'restaurant') + '</span></div><h4 class="text-lg font-bold text-white mb-3">' + r.name + '</h4><div class="text-xs text-textMuted mb-4 line-clamp-2">' + r.ingredients.map(function(i) { return i.item; }).join(', ') + '</div></div><div class="flex gap-2"><button onclick="openRecipeForm(\'' + r.id + '\')" class="flex-1 bg-white/10 py-2 rounded text-xs font-bold">Edit</button><button onclick="printSingleRecipe(\'' + r.id + '\')" class="bg-blue-600/20 text-blue-400 px-3 rounded text-xs font-bold transition">Print</button><button onclick="deleteRecipe(\'' + r.id + '\')" class="bg-danger/20 text-danger px-3 rounded text-xs font-bold transition"><span class="material-symbols-outlined text-[16px]">delete</span></button></div></div>';
+            }).join('') || '<p class="col-span-full text-center p-8 text-textMuted">No recipes found.</p>';
+        }
+
+        function deleteRecipe(id) {
+            if (confirm("Delete this recipe?")) {
+                db.recipes = db.recipes.filter(function(x) { return x.id !== id; });
+                saveDB();
+                renderRecipes();
+            }
+        }
+
+        function generateRecipeHTML(recipe) {
+            if (recipe.type === 'COCKTAIL') {
+                return '<div class="recipe-print-card"><div class="recipe-print-title"><span>&#127865; ' + recipe.name + '</span><span style="font-size:12px; font-weight:normal;">' + (recipe.glass || '') + '</span></div><div style="font-size:11px; margin-bottom:8px;"><b>Method:</b> ' + (recipe.method || 'N/A') + ' | <b>Garnish:</b> ' + (recipe.garnish || 'None') + '</div><table class="recipe-print-table"><tr><th>Ingredient</th><th>Portion</th></tr>' + recipe.ingredients.map(function(i) { return '<tr><td>' + i.item + '</td><td>' + i.qty + ' ' + i.unit + '</td></tr>'; }).join('') + '</table>' + (recipe.instructions ? '<div style="font-size:11px; margin-top:10px;"><b>Note:</b> ' + recipe.instructions + '</div>' : '') + '</div>';
+            } else {
+                return '<div class="recipe-print-card" style="width:100%;"><div class="recipe-print-title"><span>&#128104;&#8205;&#127859; ' + recipe.name + ' (Prep)</span><span style="font-size:12px; font-weight:normal;">Yield: ' + (recipe.yield || '1 Portion') + '</span></div><p style="font-size:11px; margin-bottom:10px;"><b>Instructions:</b> ' + recipe.instructions + '</p><table class="recipe-print-table"><tr><th style="width:50%;">Item</th><th>Qty</th><th>Unit</th><th>Note</th></tr>' + recipe.ingredients.map(function(i) { return '<tr><td>' + i.item + '</td><td>' + i.qty + '</td><td>' + i.unit + '</td><td>' + (i.note || '') + '</td></tr>'; }).join('') + '</table></div>';
+            }
+        }
+
+        function printSingleRecipe(id) {
+            var r = db.recipes.find(function(x) { return x.id === id; });
+            var content = '<div style="text-align:center; font-weight:900; font-size:24px; margin-bottom:20px; border-bottom:3px double #000; padding-bottom:10px;">' + db.settings.storeName + ' RECIPE</div><div class="' + (r.type === 'COCKTAIL' ? 'recipe-grid' : 'food-grid') + '">' + generateRecipeHTML(r) + '</div>';
+            document.getElementById('preview-content').innerHTML = content;
+            openPreviewModal();
+        }
+
+        function printRecipeCategory(category) {
+            var filtered = db.recipes.filter(function(r) { return r.type === category; });
+            if (!filtered.length) { showToast("No recipes found in this category."); return; }
+            var html = '<div style="text-align:center; font-weight:900; font-size:24px; margin-bottom:20px; border-bottom:3px double #000; padding-bottom:10px;">' + db.settings.storeName + ' - ' + category + '</div><div class="' + (category === 'COCKTAIL' ? 'recipe-grid' : 'food-grid') + '">' + filtered.map(function(r) { return generateRecipeHTML(r); }).join('') + '</div>';
+            document.getElementById('preview-content').innerHTML = html;
+            openPreviewModal();
+        }
+
+        // --- Employee Management ---
+        function renderEmployees() {
+            var list = document.getElementById('emp-list');
+            list.innerHTML = db.employees.map(function(emp) {
+                return '<div onclick="editEmployee(\'' + emp.id + '\')" class="glass-panel p-4 rounded-xl cursor-pointer hover:bg-white/5 flex items-center gap-3"><div class="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center font-bold text-primary">' + emp.name.charAt(0) + '</div><div class="flex-1 overflow-hidden"><div class="font-bold truncate">' + emp.name + '</div><div class="text-xs text-textMuted truncate">' + emp.pos + '</div></div><button onclick="deleteEmployee(event, \'' + emp.id + '\')" class="text-white/20 hover:text-danger material-symbols-outlined p-2">delete</button></div>';
+            }).join('') || '<p class="text-center w-full p-4 text-textMuted">No employees registered.</p>';
+        }
+
+        // FIX #8: title now correctly shows "Add Employee" for new entries
+        function openEmpForm() {
+            document.getElementById('emp-editor-section').classList.remove('hidden');
+            document.getElementById('emp-form').reset();
+            document.getElementById('emp-id').value = '';
+            document.getElementById('emp-form-title').textContent = 'Add Employee';
+            document.getElementById('emp-linked-assets').innerHTML = '';
+        }
+
+        function closeEmpForm() { document.getElementById('emp-editor-section').classList.add('hidden'); }
+
+        function editEmployee(id) {
+            var emp = db.employees.find(function(e) { return e.id === id; });
+            if (!emp) return;
+            document.getElementById('emp-editor-section').classList.remove('hidden');
+            document.getElementById('emp-form-title').textContent = 'Edit Employee';
+            document.getElementById('emp-id').value = emp.id;
+            document.getElementById('emp-name').value = emp.name;
+            document.getElementById('emp-pos').value = emp.pos;
+            document.getElementById('emp-phone').value = emp.phone || '';
+            document.getElementById('emp-email').value = emp.email || '';
+            document.getElementById('emp-hire').value = emp.hire || '';
+            document.getElementById('emp-wage').value = emp.wage || '';
+            document.getElementById('emp-memo').value = emp.memo || '';
+            renderLinkedAssets(id);
+        }
+
+        // FIX #11: renderLinkedAssets now shows BOTH template docs AND ops_files
+        function renderLinkedAssets(empId) {
+            var container = document.getElementById('emp-linked-assets');
+            container.innerHTML = 'Loading...';
+            var docs = db.docs.filter(function(d) { return d.empId === empId; });
+            var docsHtml = docs.map(function(d) {
+                return '<div class="flex items-center justify-between bg-white/5 p-2 rounded gap-2"><div class="truncate text-xs"><span class="text-primary font-bold">[Doc]</span> ' + d.type + ' (' + d.data.date + ')</div><button onclick="openPreview(\'' + d.id + '\')" class="bg-white text-black px-2 py-1 rounded text-[10px] shrink-0">View</button></div>';
+            }).join('');
+
+            if (!pdfDB) {
+                container.innerHTML = docsHtml || '<p class="text-xs text-textMuted">No linked assets.</p>';
+                return;
+            }
+
+            pdfDB.transaction('ops_files', 'readonly').objectStore('ops_files').getAll().onsuccess = function(e) {
+                var allFiles = e.target.result;
+                var linkedFiles = allFiles.filter(function(f) { return f.empId === empId; });
+                var filesHtml = linkedFiles.map(function(f) {
+                    return '<div class="flex items-center justify-between bg-white/5 p-2 rounded gap-2"><div class="truncate text-xs"><span class="text-blue-400 font-bold">[File]</span> ' + f.title + '</div><button onclick="viewGeneralFile(\'' + f.id + '\')" class="bg-blue-600 text-white px-2 py-1 rounded text-[10px] shrink-0">View</button></div>';
+                }).join('');
+                container.innerHTML = docsHtml + filesHtml || '<p class="text-xs text-textMuted">No linked assets.</p>';
+            };
+        }
+
+        // FIX #5: deleteEmployee now also deletes all linked docs
+        function deleteEmployee(e, id) {
+            e.stopPropagation();
+            var emp = db.employees.find(function(x) { return x.id === id; });
+            var empName = emp ? emp.name : 'this employee';
+            var linkedDocs = db.docs.filter(function(d) { return d.empId === id; });
+            var confirmMsg = 'Delete ' + empName + '?';
+            if (linkedDocs.length > 0) {
+                confirmMsg += '\n\nWarning: This will also delete ' + linkedDocs.length + ' linked document(s).';
+            }
+            if (confirm(confirmMsg)) {
+                db.employees = db.employees.filter(function(emp) { return emp.id !== id; });
+                db.docs = db.docs.filter(function(d) { return d.empId !== id; });
+                saveDB();
+                renderEmployees();
+                showToast("Employee and linked documents deleted.");
+            }
+        }
+
+        function saveEmployee(e) {
+            e.preventDefault();
+            var id = document.getElementById('emp-id').value || 'emp_' + Date.now();
+            var emp = {
+                id: id,
+                name: document.getElementById('emp-name').value,
+                pos: document.getElementById('emp-pos').value,
+                phone: document.getElementById('emp-phone').value,
+                email: document.getElementById('emp-email').value,
+                hire: document.getElementById('emp-hire').value,
+                wage: document.getElementById('emp-wage').value,
+                memo: document.getElementById('emp-memo').value
+            };
+            var idx = db.employees.findIndex(function(x) { return x.id === id; });
+            if (idx > -1) db.employees[idx] = emp; else db.employees.push(emp);
+            saveDB();
+            closeEmpForm();
+            renderEmployees();
+            showToast("Employee saved.");
+        }
+
+        // --- Template Management ---
+        function switchTemplate(type) {
+            currentTplType = type;
+            ['CORRECTIVE', 'NOCALL', 'TIMEOFF', 'VERIFICATION'].forEach(function(t) {
+                document.getElementById('tab-' + t).className = t === type
+                    ? "tab-btn active pb-2 font-bold text-sm shrink-0"
+                    : "tab-btn text-textMuted hover:text-white pb-2 font-bold text-sm shrink-0";
+            });
+            renderTemplates();
+        }
+
+        // FIX #9: col-span-5 used consistently in both header and row
+        function renderTemplates() {
+            var list = document.getElementById('tpl-list');
+            var filtered = db.docs.filter(function(d) { return d.type === currentTplType; });
+            filtered.sort(function(a, b) { return b.createdAt - a.createdAt; });
+            list.innerHTML = filtered.map(function(doc) {
+                var emp = db.employees.find(function(e) { return e.id === doc.empId; });
+                var empName = emp ? emp.name : 'Deleted';
+                var summary = doc.data.date || '';
+                if (doc.type === 'CORRECTIVE') summary = doc.data.type || doc.data.date;
+                if (doc.type === 'NOCALL') summary = 'Violation: ' + doc.data.viodate;
+                if (doc.type === 'TIMEOFF') summary = doc.data.start + ' ~ ' + doc.data.end + ' (' + (doc.data.approve || 'PENDING') + ')';
+                if (doc.type === 'VERIFICATION') summary = (doc.data.status || '') + ' — ' + (doc.data.start || '');
+                return '<div class="grid grid-cols-12 px-6 py-4 items-center hover:bg-surface border-b border-white/5 transition-colors min-w-[700px]"><div class="col-span-2 text-textMuted text-xs">' + new Date(doc.createdAt).toLocaleDateString() + '</div><div class="col-span-3 font-bold truncate pr-2">' + empName + '</div><div class="col-span-5 text-xs text-textMuted truncate pr-2">' + summary + '</div><div class="col-span-2 text-right flex justify-end gap-2"><button onclick="editTemplate(\'' + doc.id + '\')" class="text-primary material-symbols-outlined text-[20px]">edit</button><button onclick="openPreview(\'' + doc.id + '\')" class="text-blue-400 material-symbols-outlined text-[20px]">visibility</button><button onclick="deleteDoc(\'' + doc.id + '\')" class="text-white/20 material-symbols-outlined text-[20px]">delete</button></div></div>';
+            }).join('') || '<p class="p-8 text-center text-textMuted">No documents found.</p>';
+        }
+
+        function deleteDoc(id) {
+            if (confirm("Delete this document?")) {
+                db.docs = db.docs.filter(function(d) { return d.id !== id; });
+                saveDB();
+                renderTemplates();
+                showToast("Document deleted.");
+            }
+        }
+
+        function openTplForm(isNew) {
+            if (!db.employees.length) return alert("Please add an employee first.");
+            if (isNew) {
+                editingDocId = null;
+                document.getElementById('tpl-form-title').textContent = "Create Document";
+                document.querySelectorAll('.tpl-form').forEach(function(f) { f.reset(); });
+                // AUTO-FILL: Set today's date on all "document date" fields
+                var today = new Date().toISOString().split('T')[0];
+                document.getElementById('ca-date').value = today;
+                document.getElementById('nc-date').value = today;
+                document.getElementById('to-date').value = today;
+                document.getElementById('ev-date').value = today;
+            } else {
+                document.getElementById('tpl-form-title').textContent = "Edit Document";
+            }
+            document.getElementById('common-emp-select').innerHTML = db.employees.map(function(e) {
+                return '<option value="' + e.id + '">' + e.name + '</option>';
+            }).join('');
+            document.getElementById('tpl-form-container').classList.remove('hidden');
+            document.querySelectorAll('.tpl-form').forEach(function(f) { f.classList.add('hidden'); });
+            document.getElementById('form-' + currentTplType).classList.remove('hidden');
+            // AUTO-FILL: Populate hire date from selected employee
+            autoFillHireDate();
+        }
+
+        // AUTO-FILL: When employee selection changes, update hire date fields
+        function autoFillHireDate() {
+            var empId = document.getElementById('common-emp-select').value;
+            var emp = db.employees.find(function(e) { return e.id === empId; });
+            if (emp && emp.hire) {
+                document.getElementById('ev-start').value = emp.hire;
+            }
+        }
+
+
+        function closeTplForm() { document.getElementById('tpl-form-container').classList.add('hidden'); }
+
+        function editTemplate(id) {
+            var doc = db.docs.find(function(d) { return d.id === id; });
+            if (!doc) return;
+            currentTplType = doc.type;
+            switchTemplate(doc.type);
+            openTplForm(false);
+            editingDocId = id;
+            document.getElementById('common-emp-select').value = doc.empId;
+            var d = doc.data;
+            if (doc.type === 'CORRECTIVE') {
+                document.getElementById('ca-date').value = d.date;
+                document.getElementById('ca-sup').value = d.sup;
+                document.getElementById('ca-level').value = d.level;
+                document.getElementById('ca-type').value = d.type;
+                document.getElementById('ca-facts').value = d.facts;
+                document.getElementById('ca-exp').value = d.exp;
+                document.getElementById('ca-plan').value = d.plan;
+                document.getElementById('ca-action').value = d.action;
+                document.getElementById('ca-next').value = d.next;
+            } else if (doc.type === 'NOCALL') {
+                document.getElementById('nc-date').value = d.date;
+                document.getElementById('nc-sup').value = d.sup;
+                document.getElementById('nc-viodate').value = d.viodate;
+                document.getElementById('nc-viotime').value = d.viotime;
+                document.getElementById('nc-warns').value = d.warns;
+                document.getElementById('nc-action-taken').value = d.actionTaken;
+                document.getElementById('nc-desc').value = d.desc;
+                document.getElementById('nc-plan').value = d.plan;
+            } else if (doc.type === 'TIMEOFF') {
+                document.getElementById('to-date').value = d.date;
+                document.getElementById('to-type').value = d.type;
+                document.getElementById('to-start').value = d.start;
+                document.getElementById('to-end').value = d.end;
+                document.getElementById('to-return').value = d.return;
+                document.getElementById('to-comments').value = d.comments;
+                document.getElementById('to-approve').value = d.approve;
+                calcTimeOffDays();
+            } else if (doc.type === 'VERIFICATION') {
+                document.getElementById('ev-date').value = d.date;
+                document.getElementById('ev-status').value = d.status;
+                toggleEvEndDate();
+                document.getElementById('ev-start').value = d.start;
+                document.getElementById('ev-end').value = d.end || '';
+                document.getElementById('ev-mgr-name').value = d.mgrName;
+                document.getElementById('ev-mgr-title').value = d.mgrTitle;
+                document.getElementById('ev-mgr-phone').value = d.mgrPhone;
+                document.getElementById('ev-mgr-email').value = d.mgrEmail;
+            }
+        }
+
+        function calcTimeOffDays() {
+            var s = document.getElementById('to-start').value;
+            var e = document.getElementById('to-end').value;
+            if (s && e) {
+                var sd = new Date(s); var ed = new Date(e);
+                document.getElementById('to-days').value = ed >= sd ? Math.ceil((ed - sd) / 86400000) + 1 : 0;
+            }
+        }
+
+        function toggleEvEndDate() {
+            var status = document.getElementById('ev-status').value;
+            var endInput = document.getElementById('ev-end');
+            if (status === 'Former') {
+                endInput.disabled = false;
+                endInput.classList.remove('bg-surface/50');
+                endInput.required = true;
+            } else {
+                endInput.disabled = true;
+                endInput.classList.add('bg-surface/50');
+                endInput.required = false;
+                endInput.value = '';
+            }
+        }
+
+        function saveDocCorrective(e) {
+            e.preventDefault();
+            upsertDoc({ id: editingDocId || 'doc_' + Date.now(), type: 'CORRECTIVE', empId: document.getElementById('common-emp-select').value, createdAt: editingDocId ? db.docs.find(function(d) { return d.id === editingDocId; }).createdAt : Date.now(), data: { date: document.getElementById('ca-date').value, sup: document.getElementById('ca-sup').value, level: document.getElementById('ca-level').value, type: document.getElementById('ca-type').value, facts: document.getElementById('ca-facts').value, exp: document.getElementById('ca-exp').value, plan: document.getElementById('ca-plan').value, action: document.getElementById('ca-action').value, next: document.getElementById('ca-next').value } });
+        }
+
+        // FIX #11: use actionTaken key to avoid field name collision
+        function saveDocNoCall(e) {
+            e.preventDefault();
+            upsertDoc({ id: editingDocId || 'doc_' + Date.now(), type: 'NOCALL', empId: document.getElementById('common-emp-select').value, createdAt: editingDocId ? db.docs.find(function(d) { return d.id === editingDocId; }).createdAt : Date.now(), data: { date: document.getElementById('nc-date').value, sup: document.getElementById('nc-sup').value, viodate: document.getElementById('nc-viodate').value, viotime: document.getElementById('nc-viotime').value, warns: document.getElementById('nc-warns').value, actionTaken: document.getElementById('nc-action-taken').value, desc: document.getElementById('nc-desc').value, plan: document.getElementById('nc-plan').value } });
+        }
+
+        function saveDocTimeOff(e) {
+            e.preventDefault();
+            upsertDoc({ id: editingDocId || 'doc_' + Date.now(), type: 'TIMEOFF', empId: document.getElementById('common-emp-select').value, createdAt: editingDocId ? db.docs.find(function(d) { return d.id === editingDocId; }).createdAt : Date.now(), data: { date: document.getElementById('to-date').value, type: document.getElementById('to-type').value, days: document.getElementById('to-days').value, start: document.getElementById('to-start').value, end: document.getElementById('to-end').value, return: document.getElementById('to-return').value, comments: document.getElementById('to-comments').value, approve: document.getElementById('to-approve').value } });
+        }
+
+        function saveDocVerification(e) {
+            e.preventDefault();
+            upsertDoc({ id: editingDocId || 'doc_' + Date.now(), type: 'VERIFICATION', empId: document.getElementById('common-emp-select').value, createdAt: editingDocId ? db.docs.find(function(d) { return d.id === editingDocId; }).createdAt : Date.now(), data: { date: document.getElementById('ev-date').value, status: document.getElementById('ev-status').value, start: document.getElementById('ev-start').value, end: document.getElementById('ev-end').value, mgrName: document.getElementById('ev-mgr-name').value, mgrTitle: document.getElementById('ev-mgr-title').value, mgrPhone: document.getElementById('ev-mgr-phone').value, mgrEmail: document.getElementById('ev-mgr-email').value } });
+        }
+
+        // --- PDF / File Storage ---
+        function openPdfForm() { document.getElementById('pdf-form').classList.remove('hidden'); document.getElementById('pdf-form').reset(); }
+        function closePdfForm() { document.getElementById('pdf-form').classList.add('hidden'); }
+
+        function savePdfDoc(e) {
+            e.preventDefault();
+            var file = document.getElementById('pdf-file').files[0];
+            var reader = new FileReader();
+            document.getElementById('pdf-save-btn').textContent = "Saving...";
+            reader.onload = function(event) {
+                var newPdf = { id: 'pdf_' + Date.now(), title: document.getElementById('pdf-title').value, date: new Date().toISOString().split('T')[0], fileData: event.target.result };
+                var tx = pdfDB.transaction('pdfs', 'readwrite');
+                tx.objectStore('pdfs').add(newPdf);
+                tx.oncomplete = function() { closePdfForm(); renderPdfs(); showToast("PDF saved."); document.getElementById('pdf-save-btn').textContent = "Save"; };
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function renderPdfs() {
+            if (!pdfDB) return;
+            pdfDB.transaction('pdfs', 'readonly').objectStore('pdfs').getAll().onsuccess = function(e) {
+                var pdfs = e.target.result;
+                document.getElementById('pdf-list').innerHTML = pdfs.map(function(pdf) {
+                    return '<div class="glass-panel p-5 rounded-xl border border-white/10 flex flex-col justify-between"><div><div class="flex items-center gap-2 mb-2 font-bold text-white text-xs">' + pdf.title + '</div><div class="text-xs text-textMuted mb-4">' + pdf.date + '</div></div><div class="flex gap-2"><button onclick="viewPdf(\'' + pdf.id + '\')" class="flex-1 bg-white/10 py-2 rounded text-xs font-bold">View</button><button onclick="deletePdf(\'' + pdf.id + '\')" class="bg-danger/20 text-danger px-3 rounded text-xs font-bold">Delete</button></div></div>';
+                }).join('') || '<p class="col-span-full text-center p-8 text-textMuted">No files uploaded.</p>';
+            };
+        }
+
+        function viewPdf(id) {
+            pdfDB.transaction('pdfs', 'readonly').objectStore('pdfs').get(id).onsuccess = function(e) {
+                if (e.target.result) window.open(URL.createObjectURL(base64ToBlob(e.target.result.fileData)), '_blank');
+            };
+        }
+
+        function deletePdf(id) {
+            if (confirm("Delete this file?")) {
+                var tx = pdfDB.transaction('pdfs', 'readwrite');
+                tx.objectStore('pdfs').delete(id);
+                tx.oncomplete = function() { renderPdfs(); showToast("File deleted."); };
+            }
+        }
+
+        function openGeneralFileForm() {
+            document.getElementById('file-upload-form').classList.remove('hidden');
+            document.getElementById('file-link-emp').innerHTML = '<option value="">-- No Link --</option>' + db.employees.map(function(e) { return '<option value="' + e.id + '">' + e.name + '</option>'; }).join('');
+        }
+
+        function closeGeneralFileForm() { document.getElementById('file-upload-form').classList.add('hidden'); }
+
+        function saveGeneralFile(e) {
+            e.preventDefault();
+            var file = document.getElementById('file-input').files[0];
+            var reader = new FileReader();
+            document.getElementById('file-save-btn').textContent = "Saving...";
+            reader.onload = function(event) {
+                var newFile = { id: 'file_' + Date.now(), title: document.getElementById('file-title').value, empId: document.getElementById('file-link-emp').value, fileName: file.name, fileType: file.type, date: new Date().toISOString().split('T')[0], data: event.target.result };
+                var tx = pdfDB.transaction('ops_files', 'readwrite');
+                tx.objectStore('ops_files').add(newFile);
+                tx.oncomplete = function() { closeGeneralFileForm(); renderGeneralFiles(); showToast("File saved."); document.getElementById('file-save-btn').textContent = "Save"; };
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function renderGeneralFiles() {
+            if (!pdfDB) return;
+            pdfDB.transaction('ops_files', 'readonly').objectStore('ops_files').getAll().onsuccess = function(e) {
+                var files = e.target.result;
+                document.getElementById('general-file-list').innerHTML = files.map(function(f) {
+                    var emp = db.employees.find(function(x) { return x.id === f.empId; });
+                    var empLabel = emp ? emp.name : '';
+                    return '<div class="glass-panel p-4 rounded-xl border border-white/10 flex flex-col justify-between"><div><div class="font-bold truncate text-white text-xs mb-1">' + f.title + '</div>' + (empLabel ? '<div class="text-[10px] text-primary mb-2">&#128279; ' + empLabel + '</div>' : '') + '<div class="text-[10px] text-textMuted mb-3">' + f.date + '</div></div><div class="flex gap-2"><button onclick="viewGeneralFile(\'' + f.id + '\')" class="flex-1 bg-white/10 py-2 rounded text-xs font-bold">View</button><button onclick="deleteGeneralFile(\'' + f.id + '\')" class="bg-danger/20 text-danger px-3 rounded text-xs font-bold">Delete</button></div></div>';
+                }).join('') || '<p class="col-span-full text-center p-8 text-textMuted">No files uploaded.</p>';
+            };
+        }
+
+        function viewGeneralFile(id) {
+            pdfDB.transaction('ops_files', 'readonly').objectStore('ops_files').get(id).onsuccess = function(e) {
+                var f = e.target.result;
+                if (f) window.open(URL.createObjectURL(base64ToBlob(f.data)), '_blank');
+            };
+        }
+
+        function deleteGeneralFile(id) {
+            if (confirm("Delete this file?")) {
+                var tx = pdfDB.transaction('ops_files', 'readwrite');
+                tx.objectStore('ops_files').delete(id);
+                tx.oncomplete = function() { renderGeneralFiles(); showToast("File deleted."); };
+            }
+        }
+
+        // --- Settings ---
+        function saveSettings() {
+            db.settings.storeName = document.getElementById('set-store').value;
+            document.getElementById('sidebar-store-name').textContent = db.settings.storeName;
+            saveDB();
+            showToast("Settings saved.");
+        }
+
+        async function exportData() {
+            try {
+                var allPdfs = [], allFiles = [];
+                if (pdfDB) {
+                    allPdfs = await new Promise(function(res) { pdfDB.transaction('pdfs', 'readonly').objectStore('pdfs').getAll().onsuccess = function(e) { res(e.target.result); }; });
+                    allFiles = await new Promise(function(res) { pdfDB.transaction('ops_files', 'readonly').objectStore('ops_files').getAll().onsuccess = function(e) { res(e.target.result); }; });
+                }
+                var backupData = { settings: db.settings, employees: db.employees, docs: db.docs, recipes: db.recipes, pdfs: allPdfs, files: allFiles, version: "4.9.4" };
+                var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupData));
+                var node = document.createElement('a');
+                node.setAttribute("href", dataStr);
+                node.setAttribute("download", "StoreOps_Backup_" + Date.now() + ".json");
+                document.body.appendChild(node);
+                node.click();
+                node.remove();
+                showToast("Backup complete.");
+            } catch (err) {
+                alert("Backup failed: " + err.message);
+            }
+        }
+
+        // FIX #6: importData now properly restores IndexedDB (pdfs + files)
+        function importData(e) {
+            var file = e.target.files[0];
+            var reader = new FileReader();
+            reader.onload = function(event) {
+                try {
+                    var imported = JSON.parse(event.target.result);
+                    if (!confirm("This will overwrite ALL current data. Continue?")) return;
+
+                    // Restore localStorage data
+                    db.settings = imported.settings || { storeName: "IRON AGE" };
+                    db.employees = imported.employees || [];
+                    db.docs = imported.docs || [];
+                    db.recipes = imported.recipes || [];
+                    saveDB();
+
+                    // Restore IndexedDB data
+                    var pdfsToRestore = imported.pdfs || [];
+                    var filesToRestore = imported.files || [];
+
+                    if (!pdfDB || (pdfsToRestore.length === 0 && filesToRestore.length === 0)) {
+                        location.reload();
+                        return;
+                    }
+
+                    // Clear and restore pdfs
+                    var clearPdfsTx = pdfDB.transaction('pdfs', 'readwrite');
+                    clearPdfsTx.objectStore('pdfs').clear();
+                    clearPdfsTx.oncomplete = function() {
+                        if (pdfsToRestore.length > 0) {
+                            var writePdfsTx = pdfDB.transaction('pdfs', 'readwrite');
+                            var store = writePdfsTx.objectStore('pdfs');
+                            pdfsToRestore.forEach(function(pdf) { store.put(pdf); });
+                            writePdfsTx.oncomplete = function() { restoreFiles(); };
+                        } else {
+                            restoreFiles();
+                        }
+                    };
+
+                    function restoreFiles() {
+                        var clearFilesTx = pdfDB.transaction('ops_files', 'readwrite');
+                        clearFilesTx.objectStore('ops_files').clear();
+                        clearFilesTx.oncomplete = function() {
+                            if (filesToRestore.length > 0) {
+                                var writeFilesTx = pdfDB.transaction('ops_files', 'readwrite');
+                                var store = writeFilesTx.objectStore('ops_files');
+                                filesToRestore.forEach(function(f) { store.put(f); });
+                                writeFilesTx.oncomplete = function() { location.reload(); };
+                            } else {
+                                location.reload();
+                            }
+                        };
+                    }
+
+                } catch (err) {
+                    alert("Invalid backup file.");
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        /* --------------------------------------------------------
+           Preview & Print
+        -------------------------------------------------------- */
+        function openPreviewModal() {
+            document.getElementById('preview-modal').classList.add('modal-open');
+        }
+
+        function openPreview(id) {
+            currentPreviewDocId = id;
+            var doc = db.docs.find(function(d) { return d.id === id; });
+            if (!doc) return;
+            var emp = db.employees.find(function(e) { return e.id === doc.empId; }) || {};
+            var store = db.settings.storeName;
+            var d = doc.data;
+            var empSignHtml = d.empSign ? '<img src="' + d.empSign + '" class="sign-img">' : '';
+            var mgrSignHtml = d.mgrSign ? '<img src="' + d.mgrSign + '" class="sign-img" style="bottom:0;">' : '';
+            var empDateHtml = d.empSignDate ? d.empSignDate : '';
+            var mgrDateHtml = d.mgrSignDate ? d.mgrSignDate : '';
+            document.getElementById('btn-sign-emp').style.display = doc.type === 'VERIFICATION' ? 'none' : 'flex';
+
+            var html = '';
+            if (doc.type === 'CORRECTIVE') {
+                html = '<div class="doc-title-row"><div class="doc-title">Employee Corrective Action Form</div><div class="doc-logo">' + store + '</div></div><table class="doc-table"><tr><td style="width:50%;">Employee Name: <br><br><b>' + (emp.name || '') + '</b></td><td>Date: <br><br><b>' + d.date + '</b></td></tr><tr><td>Job Title: <br><br><b>' + (emp.pos || '') + '</b></td><td>Supervisor: <br><br><b>' + d.sup + '</b></td></tr></table><div class="doc-header-gray" style="padding:8px; border:2px solid #000; border-bottom:none;">Level of Corrective Action</div><div style="border:2px solid #000; padding:12px; margin-bottom:15px; font-size:13px;"><span class="chk">' + getBox('Verbal Warning/Counseling', d.level) + '</span> Verbal Warning/Counseling &nbsp;&nbsp;&nbsp; <span class="chk">' + getBox('Written Warning/Reprimand', d.level) + '</span> Written Warning/Reprimand <br><br> <span class="chk">' + getBox('Suspension', d.level) + '</span> Suspension &nbsp;&nbsp;&nbsp; <span class="chk">' + getBox('Termination', d.level) + '</span> Termination</div><table class="doc-table"><tr><td class="doc-header-gray" style="width:25%;">Facts / Type:</td><td><b>' + d.type + '</b><br><br><span style="white-space:pre-wrap;">' + d.facts + '</span></td></tr><tr><td class="doc-header-gray">Employee\'s Explanation:</td><td><span style="white-space:pre-wrap;">' + (d.exp || '') + '</span></td></tr><tr><td class="doc-header-gray">Expectations / Plan:</td><td><span style="white-space:pre-wrap;">' + d.plan + '</span></td></tr><tr><td class="doc-header-gray">Action Taken:</td><td><span style="white-space:pre-wrap;">' + (d.action || '') + '</span></td></tr><tr><td class="doc-header-gray">Next Action Step:</td><td><span style="white-space:pre-wrap;">' + d.next + '</span></td></tr></table><div style="font-size:12px; font-weight:bold; margin-bottom:30px;">I acknowledge receipt of this disciplinary action.</div><div class="sign-area"><div class="sign-line">Employee Signature: ' + empSignHtml + '</div><div class="sign-line" style="width:30%;">Date: <b>' + empDateHtml + '</b></div></div><div class="sign-area"><div class="sign-line">Supervisor Signature: ' + mgrSignHtml + '</div><div class="sign-line" style="width:30%;">Date: <b>' + mgrDateHtml + '</b></div></div>';
+            } else if (doc.type === 'NOCALL') {
+                html = '<div class="doc-title-row"><div class="doc-title">No Call No Show Write Up</div><div class="doc-logo">' + store + '</div></div><div class="doc-header-black">Employee Information</div><table class="doc-table" style="border-top:none;"><tr><td style="width:50%;">Employee Name: <br><br><b>' + (emp.name || '') + '</b></td><td>Supervisor: <br><br><b>' + d.sup + '</b></td></tr><tr><td>Employee ID: N/A</td><td>Date of Write Up: <br><br><b>' + d.date + '</b></td></tr></table><div class="doc-header-black">Write Up Details</div><table class="doc-table" style="border-top:none; margin-bottom:20px;"><tr><td class="doc-header-gray" style="text-align:center; width:50%;">Violation</td><td class="doc-header-gray" style="text-align:center;">Warning</td></tr><tr><td><br>&#8226; <b>No Call No Show:</b> Failure to notify about absence.</td><td>Date: <b>' + d.viodate + '</b> &nbsp;&nbsp; Time: <b>' + d.viotime + '</b><br><br>Warnings Given:<br><span class="chk">' + getBox('One', d.warns) + '</span> One &nbsp; <span class="chk">' + getBox('Two', d.warns) + '</span> Two &nbsp; <span class="chk">' + getBox('Three', d.warns) + '</span> Three</td></tr></table><div class="doc-header-black">Description</div><div class="doc-box" style="border-top:none;">' + d.desc + '</div><div class="doc-header-black">Action</div><div class="doc-box" style="border-top:none; text-align:center;"><b>' + (d.actionTaken || '') + '</b></div><div class="doc-header-black">Plan For Improvement</div><div class="doc-box" style="border-top:none; min-height:80px;">' + d.plan + '</div><div class="sign-area"><div class="sign-line">Employee Signature: ' + empSignHtml + '</div><div class="sign-line" style="width:30%;">Date Signed: <b>' + empDateHtml + '</b></div></div><div class="sign-area"><div class="sign-line">Manager Signature: ' + mgrSignHtml + '</div><div class="sign-line" style="width:30%;">Date Signed: <b>' + mgrDateHtml + '</b></div></div>';
+            } else if (doc.type === 'TIMEOFF') {
+                html = '<div style="text-align:center; margin-bottom:20px;"><div class="doc-logo" style="font-size:30px;">' + store + '</div><div style="font-size:12px;">TIME OFF REQUEST FORM</div></div><div class="doc-header-black">Employee Information</div><table class="doc-table" style="border-top:none;"><tr><td colspan="2">Name: <b>' + (emp.name || '') + '</b></td></tr><tr><td>Today\'s Date: <b>' + d.date + '</b></td><td>Requested days: <b>' + d.days + ' Days</b></td></tr><tr><td style="width:50%;">Starting on: <b>' + d.start + '</b></td><td>Ending on: <b>' + d.end + '</b></td></tr><tr><td colspan="2">Return to work on: <b>' + d.return + '</b></td></tr></table><div class="doc-header-black">Type of Request</div><div class="doc-box" style="border-top:none; text-align:center;"><b>' + d.type + '</b></div><div class="doc-header-black">Comments / Approval</div><div class="doc-box" style="border-top:none;"><div>' + (d.comments || 'None') + '</div><div style="text-align:center; font-weight:bold; margin:20px 0; font-size:16px;">APPROVED: <span class="chk">' + getBox('YES', d.approve) + '</span> YES &nbsp; <span class="chk">' + getBox('NO', d.approve) + '</span> NO</div><div class="sign-area"><div class="sign-line">Employee Signature: ' + empSignHtml + '<br><span style="font-size:11px; font-weight:normal;">Date: <b>' + empDateHtml + '</b></span></div><div class="sign-line">Manager Signature: ' + mgrSignHtml + '<br><span style="font-size:11px; font-weight:normal;">Date: <b>' + mgrDateHtml + '</b></span></div></div></div>';
+            } else if (doc.type === 'VERIFICATION') {
+                var isCurrent = d.status === 'Current';
+                var formattedDate = d.date;
+                if (d.date && d.date.includes('-')) {
+                    var parts = d.date.split('-');
+                    var dateObj = new Date(parts[0], parts[1] - 1, parts[2]);
+                    if (!isNaN(dateObj)) formattedDate = dateObj.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: '2-digit' });
+                }
+                var employmentDetail = isCurrent
+                    ? '<b>' + (emp.name || '') + '</b> has been working as a <b>' + (emp.pos || '') + '</b> at <b>' + store + '</b> since <b>' + d.start + '</b> and is currently employed.'
+                    : '<b>' + (emp.name || '') + '</b> was employed at <b>' + store + '</b> from <b>' + d.start + '</b> to <b>' + d.end + '</b>.<br><br>During this period, he/she held the position of <b>' + (emp.pos || '') + '</b>.';
+                html = '<div style="font-family:\'Inter\', Arial, sans-serif; font-size:15px; line-height:1.8; padding:0.5in; color:#000; max-width:800px; margin:0 auto; text-align:justify; background:#fff;"><div style="margin-bottom:40px; font-size:16px;">' + formattedDate + '</div><div style="margin-bottom:30px; font-size:16px;">To Whom It May Concern,</div><div style="font-weight:bold; font-size:18px; margin-bottom:30px; border-bottom:2px solid #000; padding-bottom:5px;">RE: Employment Verification for ' + (emp.name || '') + '</div><p style="margin-bottom:20px;">Please accept this letter as confirmation of the employment history of <b>' + (emp.name || '') + '</b> with <b>' + store + '</b>.</p><p style="margin-bottom:20px;">' + employmentDetail + '</p><p style="margin-bottom:20px;"><b>' + (emp.name || '') + '</b> reported directly to <b>' + d.mgrName + '</b>, who holds the title of <b>' + d.mgrTitle + '</b>. We provide this verification at the request of <b>' + (emp.name || '') + '</b>.</p><p style="margin-bottom:50px;">Should you require any further information, please do not hesitate to contact me.</p><div style="margin-bottom:10px; font-size:16px;">Sincerely,</div><div style="height:70px; margin-bottom:10px; position:relative;">' + (d.mgrSign ? '<img src="' + d.mgrSign + '" style="max-height:100%; max-width:250px; position:absolute; bottom:0; left:0; filter:contrast(1.2);">' : '') + '</div><div style="font-weight:bold; font-size:16px;">' + d.mgrName + '</div><div style="color:#222;">' + d.mgrTitle + '</div><div style="color:#222; margin-bottom:15px;">' + store + '</div><div style="color:#444; font-size:14px; border-top:1px solid #ccc; padding-top:10px; width:250px;">' + d.mgrPhone + '<br>' + d.mgrEmail + '</div></div>';
+            }
+            document.getElementById('preview-content').innerHTML = html;
+            openPreviewModal();
+        }
+
+        function closePreview() {
+            document.getElementById('preview-modal').classList.remove('modal-open');
+        }
+
+        function executePrint() {
+            document.getElementById('print-section').innerHTML = document.getElementById('preview-content').innerHTML;
+            setTimeout(function() { window.print(); }, 100);
+        }
+
+        /* --------------------------------------------------------
+           Signature Canvas
+           FIX #1: getPos() corrected — mouse vs touch properly handled
+           FIX #3: touchend event added to stop drawing on mobile
+        -------------------------------------------------------- */
+        var canvas = document.getElementById('sig-canvas');
+        var ctx = canvas.getContext('2d');
+        var isDrawing = false;
+        var lastX = 0;
+        var lastY = 0;
+
+        function resizeCanvas() {
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+        }
+
+        // FIX #1: Properly distinguish touch vs mouse events
+        function getPos(e) {
+            var rect = canvas.getBoundingClientRect();
+            var clientX, clientY;
+            if (e.touches && e.touches.length > 0) {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            } else {
+                clientX = e.clientX;
+                clientY = e.clientY;
+            }
+            return [clientX - rect.left, clientY - rect.top];
+        }
+
+        canvas.addEventListener('mousedown', function(e) { isDrawing = true; var pos = getPos(e); lastX = pos[0]; lastY = pos[1]; });
+        canvas.addEventListener('mousemove', function(e) {
+            if (!isDrawing) return;
+            var pos = getPos(e);
+            ctx.beginPath(); ctx.moveTo(lastX, lastY); ctx.lineTo(pos[0], pos[1]);
+            ctx.strokeStyle = '#000'; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.stroke();
+            lastX = pos[0]; lastY = pos[1];
+        });
+        canvas.addEventListener('mouseup', function() { isDrawing = false; });
+        canvas.addEventListener('mouseleave', function() { isDrawing = false; });
+
+        canvas.addEventListener('touchstart', function(e) { e.preventDefault(); isDrawing = true; var pos = getPos(e); lastX = pos[0]; lastY = pos[1]; });
+        canvas.addEventListener('touchmove', function(e) {
+            e.preventDefault();
+            if (!isDrawing) return;
+            var pos = getPos(e);
+            ctx.beginPath(); ctx.moveTo(lastX, lastY); ctx.lineTo(pos[0], pos[1]);
+            ctx.strokeStyle = '#000'; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.stroke();
+            lastX = pos[0]; lastY = pos[1];
+        });
+        // FIX #3: touchend now properly stops drawing
+        canvas.addEventListener('touchend', function(e) { e.preventDefault(); isDrawing = false; });
+        canvas.addEventListener('touchcancel', function(e) { e.preventDefault(); isDrawing = false; });
+
+        function openSignature(type) {
+            currentSignType = type;
+            document.getElementById('sig-title').textContent = type === 'emp' ? 'Employee Signature' : 'Manager Signature';
+            document.getElementById('signature-modal').classList.add('modal-open');
+            setTimeout(resizeCanvas, 50);
+        }
+
+        function closeSignature() {
+            document.getElementById('signature-modal').classList.remove('modal-open');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function clearSignature() { ctx.clearRect(0, 0, canvas.width, canvas.height); }
+
+        function saveSignature() {
+            var base64Img = canvas.toDataURL('image/png');
+            var signedDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+            var docIdx = db.docs.findIndex(function(d) { return d.id === currentPreviewDocId; });
+            if (docIdx > -1) {
+                if (currentSignType === 'emp') {
+                    db.docs[docIdx].data.empSign = base64Img;
+                    db.docs[docIdx].data.empSignDate = signedDate;
+                }
+                if (currentSignType === 'mgr') {
+                    db.docs[docIdx].data.mgrSign = base64Img;
+                    db.docs[docIdx].data.mgrSignDate = signedDate;
+                }
+                saveDB();
+                closeSignature();
+                openPreview(currentPreviewDocId);
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
