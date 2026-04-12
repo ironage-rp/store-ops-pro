@@ -175,6 +175,11 @@
                 autocomplete="current-password"
                 onkeydown="if(event.key==='Enter') checkPassword()"
             >
+            <!-- Remember this device -->
+            <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:#94a3b8;margin-bottom:4px;cursor:pointer;justify-content:center;">
+                <input type="checkbox" id="gate-remember" style="width:15px;height:15px;accent-color:#f97316;cursor:pointer;">
+                Remember this device
+            </label>
             <button id="gate-btn" onclick="checkPassword()">Unlock</button>
             <div id="gate-err"></div>
         </div>
@@ -441,6 +446,29 @@
                         <h3 class="text-xl font-bold border-b border-white/10 pb-2">App Settings</h3>
                         <input type="text" id="set-store" class="w-full bg-surface border border-white/10 rounded-lg p-3 text-white">
                         <button onclick="saveSettings()" class="w-full bg-white text-black py-3 rounded-lg font-bold">Save Settings</button>
+
+                        <h3 class="text-xl font-bold border-b border-white/10 pb-2 mt-10">Change Password</h3>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-xs text-textMuted mb-1">Current Password</label>
+                                <input type="password" id="pw-current" class="w-full bg-surface border border-white/10 rounded-lg p-3 text-white" placeholder="Current password">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-textMuted mb-1">New Password</label>
+                                <input type="password" id="pw-new" class="w-full bg-surface border border-white/10 rounded-lg p-3 text-white" placeholder="New password (min 6 chars)">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-textMuted mb-1">Confirm New Password</label>
+                                <input type="password" id="pw-confirm" class="w-full bg-surface border border-white/10 rounded-lg p-3 text-white" placeholder="Confirm new password">
+                            </div>
+                            <p id="pw-err" class="text-xs text-danger font-bold min-h-[16px]"></p>
+                            <p id="pw-ok"  class="text-xs text-green-400 font-bold min-h-[16px]"></p>
+                            <button onclick="changePassword()" class="w-full bg-primary text-white py-3 rounded-lg font-bold flex items-center justify-center gap-2">
+                                <span class="material-symbols-outlined text-[18px]">lock_reset</span> Update Password
+                            </button>
+                            <p class="text-xs text-textMuted">Changing the password will sign out all trusted devices.</p>
+                        </div>
+
                         <h3 class="text-xl font-bold border-b border-white/10 pb-2 mt-10">Backup & Restore</h3>
                         <!-- FIX #6: importData now properly restores IndexedDB pdfs and files -->
                         <div class="flex flex-col sm:flex-row gap-4 mt-4">
@@ -1208,7 +1236,7 @@
                     supa.from('staff_files').select('*')
                 ]);
                 var backupData = {
-                    version: "4.9.6",
+                    version: "4.9.7",
                     settings:    results[3].data ? results[3].data.data : db.settings,
                     employees:   (results[0].data || []).map(function(r) { return r.data; }),
                     docs:        results[1].data || [],
@@ -1443,63 +1471,130 @@
             }
         }
 
-        /* ── PASSWORD GATE LOGIC ── */
-        // Password is hashed with SHA-256 — plain text never stored
-        var PASS_HASH = "259dfaa72a1ceed91f12b6a7afd7f43c2dd1f838db455e080f02c5e46171eef9";
-        var SESSION_KEY = "ops_auth_v1";
+        /* ══════════════════════════════════════════════
+           PASSWORD GATE — v4.9.7
+           ① Hash stored in Supabase (settings table)
+           ② Trusted device token in localStorage
+           ③ Session token in sessionStorage
+           ══════════════════════════════════════════════ */
+        var SESSION_KEY    = "ops_auth_v1";
+        var TRUSTED_KEY    = "ops_trusted_v1";   // persists across tabs/browser closes
+        var FALLBACK_HASH  = "259dfaa72a1ceed91f12b6a7afd7f43c2dd1f838db455e080f02c5e46171eef9"; // SHA-256 of default pw
+        var _resolvedHash  = null; // cached after first Supabase fetch
 
+        /* SHA-256 helper */
         function hashPassword(str) {
-            // Simple but effective: use SubtleCrypto if available, else fallback
             if (window.crypto && window.crypto.subtle) {
                 var encoder = new TextEncoder();
-                var data = encoder.encode(str);
-                return window.crypto.subtle.digest('SHA-256', data).then(function(buf) {
+                return window.crypto.subtle.digest('SHA-256', encoder.encode(str)).then(function(buf) {
                     return Array.from(new Uint8Array(buf)).map(function(b) {
                         return b.toString(16).padStart(2, '0');
                     }).join('');
                 });
             }
-            // Fallback for very old browsers without SubtleCrypto
-            return Promise.resolve("wrong");
+            return Promise.resolve("unsupported");
         }
 
-        function checkPassword() {
-            var input = document.getElementById('gate-input');
-            var errEl = document.getElementById('gate-err');
-            var val = input.value;
-            if (!val) return;
-
-            hashPassword(val).then(function(hash) {
-                if (hash === PASS_HASH) {
-                    // Store session (expires when tab closes — sessionStorage)
-                    sessionStorage.setItem(SESSION_KEY, "1");
-                    document.getElementById('gate-overlay').classList.add('unlocked');
-                    input.value = '';
-                    errEl.textContent = '';
-                    // Init app after unlock
-                    init();
-                } else {
-                    input.classList.add('error');
-                    errEl.textContent = 'Incorrect password. Try again.';
-                    input.value = '';
-                    setTimeout(function() { input.classList.remove('error'); }, 400);
-                }
-            });
+        /* Fetch hash from Supabase settings, fallback to hardcoded if not set */
+        function getStoredHash() {
+            if (_resolvedHash) return Promise.resolve(_resolvedHash);
+            return supa.from('settings').select('data').eq('id', 'main').maybeSingle().then(function(res) {
+                var h = (res.data && res.data.data && res.data.data.passHash) ? res.data.data.passHash : FALLBACK_HASH;
+                _resolvedHash = h;
+                return h;
+            }).catch(function() { return FALLBACK_HASH; });
         }
 
+        /* Save new hash to Supabase */
+        function saveHashToSupabase(hash) {
+            _resolvedHash = hash;
+            db.settings.passHash = hash;
+            return supa.from('settings').upsert({ id: 'main', data: db.settings });
+        }
+
+        /* Unlock the gate and start the app */
+        function unlockApp(rememberDevice) {
+            sessionStorage.setItem(SESSION_KEY, "1");
+            if (rememberDevice) {
+                localStorage.setItem(TRUSTED_KEY, "1");
+            }
+            document.getElementById('gate-overlay').classList.add('unlocked');
+        }
+
+        /* Check if already trusted (session OR device) */
         function checkSession() {
-            if (sessionStorage.getItem(SESSION_KEY) === "1") {
+            if (sessionStorage.getItem(SESSION_KEY) === "1" || localStorage.getItem(TRUSTED_KEY) === "1") {
                 document.getElementById('gate-overlay').classList.add('unlocked');
                 return true;
             }
             return false;
         }
 
+        /* Main login handler */
+        function checkPassword() {
+            var input  = document.getElementById('gate-input');
+            var errEl  = document.getElementById('gate-err');
+            var val    = input.value;
+            if (!val) return;
+
+            var remember = document.getElementById('gate-remember') && document.getElementById('gate-remember').checked;
+
+            hashPassword(val).then(function(hash) {
+                return getStoredHash().then(function(storedHash) {
+                    if (hash === storedHash) {
+                        input.value = '';
+                        errEl.textContent = '';
+                        unlockApp(remember);
+                        init();
+                    } else {
+                        input.classList.add('error');
+                        errEl.textContent = 'Incorrect password. Try again.';
+                        input.value = '';
+                        setTimeout(function() { input.classList.remove('error'); }, 400);
+                    }
+                });
+            });
+        }
+
+        /* Change password — called from Settings panel */
+        function changePassword() {
+            var cur  = document.getElementById('pw-current').value;
+            var nw   = document.getElementById('pw-new').value;
+            var conf = document.getElementById('pw-confirm').value;
+            var errEl = document.getElementById('pw-err');
+            var okEl  = document.getElementById('pw-ok');
+            errEl.textContent = ''; okEl.textContent = '';
+
+            if (!cur || !nw || !conf) { errEl.textContent = 'All fields required.'; return; }
+            if (nw.length < 6)        { errEl.textContent = 'New password must be at least 6 characters.'; return; }
+            if (nw !== conf)          { errEl.textContent = 'New passwords do not match.'; return; }
+
+            hashPassword(cur).then(function(curHash) {
+                return getStoredHash().then(function(storedHash) {
+                    if (curHash !== storedHash) {
+                        errEl.textContent = 'Current password is incorrect.';
+                        return;
+                    }
+                    return hashPassword(nw).then(function(newHash) {
+                        return saveHashToSupabase(newHash).then(function(res) {
+                            if (res.error) { errEl.textContent = 'Save failed: ' + res.error.message; return; }
+                            // Clear all trusted tokens so all devices re-authenticate
+                            localStorage.removeItem(TRUSTED_KEY);
+                            sessionStorage.removeItem(SESSION_KEY);
+                            document.getElementById('pw-current').value = '';
+                            document.getElementById('pw-new').value = '';
+                            document.getElementById('pw-confirm').value = '';
+                            okEl.textContent = 'Password changed! All devices will need to re-login.';
+                        });
+                    });
+                });
+            });
+        }
+
         window.addEventListener('DOMContentLoaded', function() {
-            // Focus password input on load
             var inp = document.getElementById('gate-input');
             if (inp) setTimeout(function() { inp.focus(); }, 100);
-            // If already authenticated this session, skip gate
+            // Trusted device or active session → skip gate
             if (checkSession()) {
                 init();
             }
