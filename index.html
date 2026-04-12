@@ -155,6 +155,8 @@
             #print-section .recipe-print-table th { background: #eee !important; color: #000 !important; }
         }
     </style>
+    <!-- Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="flex h-[100dvh] antialiased text-sm">
 
@@ -178,6 +180,14 @@
         </div>
     </div>
     <!-- ── END PASSWORD GATE ── -->
+
+    <!-- ── LOADING OVERLAY ── -->
+    <div id="loading-overlay" class="hidden fixed inset-0 bg-black/70 z-[80] flex items-center justify-center flex-col gap-4">
+        <div style="width:48px;height:48px;border:4px solid #334155;border-top-color:#f97316;border-radius:50%;animation:spin 0.8s linear infinite;"></div>
+        <p id="loading-msg" class="text-white font-bold text-sm">Loading...</p>
+    </div>
+    <style>@keyframes spin { to { transform: rotate(360deg); } }</style>
+    <!-- ── END LOADING OVERLAY ── -->
 
     <div id="sidebar-overlay" class="fixed inset-0 bg-black/70 z-40 hidden md:hidden transition-opacity" onclick="toggleSidebar()"></div>
 
@@ -479,24 +489,75 @@
     <div id="print-section"></div>
 
     <script>
-        var db = { 
-            settings: JSON.parse(localStorage.getItem('ops_settings')) || { storeName: "IRON AGE" }, 
-            employees: JSON.parse(localStorage.getItem('ops_emps')) || [], 
-            docs: JSON.parse(localStorage.getItem('ops_docs')) || [],
-            recipes: JSON.parse(localStorage.getItem('ops_recipes')) || []
+        /* ── Supabase Config ── */
+        var SUPA_URL = "https://eglljgaqohhitiliimna.supabase.co";
+        var SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVnbGxqZ2Fxb2hoaXRpbGlpbW5hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyMzkxNTEsImV4cCI6MjA4OTgxNTE1MX0.CDXgprtv5plsGB4gOEgWTaRRFtoJcIzo5ZbWd6W_-Ec";
+        var supa = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+        /* ── In-memory cache ── */
+        var db = {
+            settings: { storeName: "IRON AGE" },
+            employees: [],
+            docs: [],
+            recipes: []
         };
         var currentTplType = 'CORRECTIVE';
         var currentPreviewDocId = null;
         var currentSignType = null;
         var editingDocId = null;
-        var pdfDB = null;
 
-        function init() { 
-            document.getElementById('set-store').value = db.settings.storeName; 
-            document.getElementById('sidebar-store-name').textContent = db.settings.storeName; 
-            initIndexedDB();
-            switchMainTab('dashboard'); 
+        /* ── Loading helpers ── */
+        function showLoading(msg) {
+            var el = document.getElementById('loading-overlay');
+            if (el) { el.querySelector('#loading-msg').textContent = msg || 'Loading...'; el.classList.remove('hidden'); }
         }
+        function hideLoading() {
+            var el = document.getElementById('loading-overlay');
+            if (el) el.classList.add('hidden');
+        }
+
+        /* ── Init: load all data from Supabase ── */
+        function init() {
+            showLoading('Loading data...');
+            Promise.all([
+                supa.from('settings').select('*').eq('id', 'main').maybeSingle(),
+                supa.from('employees').select('*'),
+                supa.from('docs').select('*'),
+                supa.from('recipes').select('*')
+            ]).then(function(results) {
+                var settingsRes = results[0];
+                var empRes      = results[1];
+                var docsRes     = results[2];
+                var recipeRes   = results[3];
+
+                if (settingsRes.data) db.settings = settingsRes.data.data;
+                db.employees = (empRes.data || []).map(function(r) { return r.data; });
+                db.docs = (docsRes.data || []).map(function(r) {
+                    var d = r.data;
+                    d.id        = r.id;
+                    d.empId     = r.emp_id;
+                    d.type      = r.type;
+                    d.createdAt = r.created_at_ms;
+                    return d;
+                });
+                db.recipes = (recipeRes.data || []).map(function(r) { return r.data; });
+
+                document.getElementById('set-store').value = db.settings.storeName;
+                document.getElementById('sidebar-store-name').textContent = db.settings.storeName;
+                hideLoading();
+                switchMainTab('dashboard');
+                renderEmployees();
+                renderRecipes();
+            }).catch(function(err) {
+                hideLoading();
+                showToast('Connection error. Check network.');
+                console.error(err);
+                switchMainTab('dashboard');
+            });
+        }
+
+        /* ── saveDB: no-op, each operation saves directly to Supabase ── */
+        function saveDB() {}
 
         function base64ToBlob(dataURI) {
             var splitDataURI = dataURI.split(',');
@@ -517,29 +578,6 @@
                 sb.classList.add('-translate-x-full');
                 ov.classList.add('hidden');
             }
-        }
-
-        function initIndexedDB() {
-            var request = indexedDB.open("StoreOpsDB", 2);
-            request.onupgradeneeded = function(e) {
-                var database = e.target.result;
-                if (!database.objectStoreNames.contains('pdfs')) database.createObjectStore('pdfs', { keyPath: 'id' });
-                if (!database.objectStoreNames.contains('ops_files')) database.createObjectStore('ops_files', { keyPath: 'id' });
-            };
-            request.onsuccess = function(e) {
-                pdfDB = e.target.result;
-                renderEmployees();
-                renderPdfs();
-                renderGeneralFiles();
-                renderRecipes();
-            };
-        }
-
-        function saveDB() { 
-            localStorage.setItem('ops_settings', JSON.stringify(db.settings)); 
-            localStorage.setItem('ops_emps', JSON.stringify(db.employees)); 
-            localStorage.setItem('ops_docs', JSON.stringify(db.docs)); 
-            localStorage.setItem('ops_recipes', JSON.stringify(db.recipes));
         }
 
         function switchMainTab(tabId) {
@@ -610,27 +648,35 @@
         function getBox(match, current) { return match === current ? '&#9745;' : '&#9744;'; }
 
         function upsertDoc(docData) {
-            if (editingDocId) {
-                var idx = db.docs.findIndex(function(d) { return d.id === editingDocId; });
-                if (idx > -1) {
-                    var existingEmpSign = db.docs[idx].data.empSign;
-                    var existingMgrSign = db.docs[idx].data.mgrSign;
-                    var existingEmpSignDate = db.docs[idx].data.empSignDate;
-                    var existingMgrSignDate = db.docs[idx].data.mgrSignDate;
-                    db.docs[idx].empId = docData.empId;
-                    db.docs[idx].data = docData.data;
-                    if (existingEmpSign) db.docs[idx].data.empSign = existingEmpSign;
-                    if (existingMgrSign) db.docs[idx].data.mgrSign = existingMgrSign;
-                    if (existingEmpSignDate) db.docs[idx].data.empSignDate = existingEmpSignDate;
-                    if (existingMgrSignDate) db.docs[idx].data.mgrSignDate = existingMgrSignDate;
-                }
-            } else {
-                db.docs.push(docData);
+            var existingDoc = editingDocId ? db.docs.find(function(d) { return d.id === editingDocId; }) : null;
+            // Preserve signatures if editing
+            if (existingDoc) {
+                if (existingDoc.empSign)     docData.data.empSign     = existingDoc.empSign;
+                if (existingDoc.mgrSign)     docData.data.mgrSign     = existingDoc.mgrSign;
+                if (existingDoc.empSignDate) docData.data.empSignDate = existingDoc.empSignDate;
+                if (existingDoc.mgrSignDate) docData.data.mgrSignDate = existingDoc.mgrSignDate;
             }
-            saveDB();
-            closeTplForm();
-            renderTemplates();
-            showToast("Document saved successfully.");
+            var row = {
+                id:            docData.id,
+                emp_id:        docData.empId,
+                type:          docData.type,
+                data:          docData.data,
+                created_at_ms: docData.createdAt
+            };
+            supa.from('docs').upsert(row).then(function(res) {
+                if (res.error) { showToast('Save failed: ' + res.error.message); return; }
+                // Merge into memory cache
+                var d = docData.data;
+                d.id        = docData.id;
+                d.empId     = docData.empId;
+                d.type      = docData.type;
+                d.createdAt = docData.createdAt;
+                var idx = db.docs.findIndex(function(x) { return x.id === docData.id; });
+                if (idx > -1) db.docs[idx] = d; else db.docs.push(d);
+                closeTplForm();
+                renderTemplates();
+                showToast("Document saved successfully.");
+            });
         }
 
         function showToast(msg) { 
@@ -706,12 +752,14 @@
                 instructions: document.getElementById('recipe-instructions').value,
                 ingredients: ingredients
             };
-            var idx = db.recipes.findIndex(function(x) { return x.id === id; });
-            if (idx > -1) db.recipes[idx] = recipe; else db.recipes.push(recipe);
-            saveDB();
-            closeRecipeForm();
-            renderRecipes();
-            showToast("Recipe saved.");
+            supa.from('recipes').upsert({ id: id, data: recipe }).then(function(res) {
+                if (res.error) { showToast('Save failed: ' + res.error.message); return; }
+                var idx = db.recipes.findIndex(function(x) { return x.id === id; });
+                if (idx > -1) db.recipes[idx] = recipe; else db.recipes.push(recipe);
+                closeRecipeForm();
+                renderRecipes();
+                showToast("Recipe saved.");
+            });
         }
 
         function renderRecipes() {
@@ -723,9 +771,11 @@
 
         function deleteRecipe(id) {
             if (confirm("Delete this recipe?")) {
-                db.recipes = db.recipes.filter(function(x) { return x.id !== id; });
-                saveDB();
-                renderRecipes();
+                supa.from('recipes').delete().eq('id', id).then(function(res) {
+                    if (res.error) { showToast('Delete failed.'); return; }
+                    db.recipes = db.recipes.filter(function(x) { return x.id !== id; });
+                    renderRecipes();
+                });
             }
         }
 
@@ -790,25 +840,17 @@
         // FIX #11: renderLinkedAssets now shows BOTH template docs AND ops_files
         function renderLinkedAssets(empId) {
             var container = document.getElementById('emp-linked-assets');
-            container.innerHTML = 'Loading...';
+            container.innerHTML = '<p class="text-xs text-textMuted">Loading...</p>';
             var docs = db.docs.filter(function(d) { return d.empId === empId; });
             var docsHtml = docs.map(function(d) {
-                return '<div class="flex items-center justify-between bg-white/5 p-2 rounded gap-2"><div class="truncate text-xs"><span class="text-primary font-bold">[Doc]</span> ' + d.type + ' (' + d.data.date + ')</div><button onclick="openPreview(\'' + d.id + '\')" class="bg-white text-black px-2 py-1 rounded text-[10px] shrink-0">View</button></div>';
+                return '<div class="flex items-center justify-between bg-white/5 p-2 rounded gap-2"><div class="truncate text-xs"><span class="text-primary font-bold">[Doc]</span> ' + d.type + ' (' + (d.date || '') + ')</div><button onclick="openPreview(\'' + d.id + '\')" class="bg-white text-black px-2 py-1 rounded text-[10px] shrink-0">View</button></div>';
             }).join('');
-
-            if (!pdfDB) {
-                container.innerHTML = docsHtml || '<p class="text-xs text-textMuted">No linked assets.</p>';
-                return;
-            }
-
-            pdfDB.transaction('ops_files', 'readonly').objectStore('ops_files').getAll().onsuccess = function(e) {
-                var allFiles = e.target.result;
-                var linkedFiles = allFiles.filter(function(f) { return f.empId === empId; });
-                var filesHtml = linkedFiles.map(function(f) {
+            supa.from('staff_files').select('id, title').eq('emp_id', empId).then(function(res) {
+                var filesHtml = (res.data || []).map(function(f) {
                     return '<div class="flex items-center justify-between bg-white/5 p-2 rounded gap-2"><div class="truncate text-xs"><span class="text-blue-400 font-bold">[File]</span> ' + f.title + '</div><button onclick="viewGeneralFile(\'' + f.id + '\')" class="bg-blue-600 text-white px-2 py-1 rounded text-[10px] shrink-0">View</button></div>';
                 }).join('');
                 container.innerHTML = docsHtml + filesHtml || '<p class="text-xs text-textMuted">No linked assets.</p>';
-            };
+            });
         }
 
         // FIX #5: deleteEmployee now also deletes all linked docs
@@ -822,11 +864,15 @@
                 confirmMsg += '\n\nWarning: This will also delete ' + linkedDocs.length + ' linked document(s).';
             }
             if (confirm(confirmMsg)) {
-                db.employees = db.employees.filter(function(emp) { return emp.id !== id; });
-                db.docs = db.docs.filter(function(d) { return d.empId !== id; });
-                saveDB();
-                renderEmployees();
-                showToast("Employee and linked documents deleted.");
+                Promise.all([
+                    supa.from('employees').delete().eq('id', id),
+                    supa.from('docs').delete().eq('emp_id', id)
+                ]).then(function() {
+                    db.employees = db.employees.filter(function(x) { return x.id !== id; });
+                    db.docs = db.docs.filter(function(d) { return d.empId !== id; });
+                    renderEmployees();
+                    showToast("Employee and linked documents deleted.");
+                }).catch(function(err) { showToast('Delete failed.'); console.error(err); });
             }
         }
 
@@ -843,12 +889,14 @@
                 wage: document.getElementById('emp-wage').value,
                 memo: document.getElementById('emp-memo').value
             };
-            var idx = db.employees.findIndex(function(x) { return x.id === id; });
-            if (idx > -1) db.employees[idx] = emp; else db.employees.push(emp);
-            saveDB();
-            closeEmpForm();
-            renderEmployees();
-            showToast("Employee saved.");
+            supa.from('employees').upsert({ id: id, data: emp }).then(function(res) {
+                if (res.error) { showToast('Save failed: ' + res.error.message); return; }
+                var idx = db.employees.findIndex(function(x) { return x.id === id; });
+                if (idx > -1) db.employees[idx] = emp; else db.employees.push(emp);
+                closeEmpForm();
+                renderEmployees();
+                showToast("Employee saved.");
+            });
         }
 
         // --- Template Management ---
@@ -881,10 +929,12 @@
 
         function deleteDoc(id) {
             if (confirm("Delete this document?")) {
-                db.docs = db.docs.filter(function(d) { return d.id !== id; });
-                saveDB();
-                renderTemplates();
-                showToast("Document deleted.");
+                supa.from('docs').delete().eq('id', id).then(function(res) {
+                    if (res.error) { showToast('Delete failed.'); return; }
+                    db.docs = db.docs.filter(function(d) { return d.id !== id; });
+                    renderTemplates();
+                    showToast("Document deleted.");
+                });
             }
         }
 
@@ -1030,35 +1080,47 @@
             var reader = new FileReader();
             document.getElementById('pdf-save-btn').textContent = "Saving...";
             reader.onload = function(event) {
-                var newPdf = { id: 'pdf_' + Date.now(), title: document.getElementById('pdf-title').value, date: new Date().toISOString().split('T')[0], fileData: event.target.result };
-                var tx = pdfDB.transaction('pdfs', 'readwrite');
-                tx.objectStore('pdfs').add(newPdf);
-                tx.oncomplete = function() { closePdfForm(); renderPdfs(); showToast("PDF saved."); document.getElementById('pdf-save-btn').textContent = "Save"; };
+                var newPdf = {
+                    id: 'pdf_' + Date.now(),
+                    title: document.getElementById('pdf-title').value,
+                    date: new Date().toISOString().split('T')[0],
+                    file_data: event.target.result
+                };
+                supa.from('pdf_files').insert(newPdf).then(function(res) {
+                    document.getElementById('pdf-save-btn').textContent = "Save";
+                    if (res.error) { showToast('Upload failed: ' + res.error.message); return; }
+                    closePdfForm();
+                    renderPdfs();
+                    showToast("PDF saved.");
+                });
             };
             reader.readAsDataURL(file);
         }
 
         function renderPdfs() {
-            if (!pdfDB) return;
-            pdfDB.transaction('pdfs', 'readonly').objectStore('pdfs').getAll().onsuccess = function(e) {
-                var pdfs = e.target.result;
+            supa.from('pdf_files').select('id, title, date').order('created_at', { ascending: false }).then(function(res) {
+                if (res.error) { document.getElementById('pdf-list').innerHTML = '<p class="text-danger p-4">Load error.</p>'; return; }
+                var pdfs = res.data || [];
                 document.getElementById('pdf-list').innerHTML = pdfs.map(function(pdf) {
                     return '<div class="glass-panel p-5 rounded-xl border border-white/10 flex flex-col justify-between"><div><div class="flex items-center gap-2 mb-2 font-bold text-white text-xs">' + pdf.title + '</div><div class="text-xs text-textMuted mb-4">' + pdf.date + '</div></div><div class="flex gap-2"><button onclick="viewPdf(\'' + pdf.id + '\')" class="flex-1 bg-white/10 py-2 rounded text-xs font-bold">View</button><button onclick="deletePdf(\'' + pdf.id + '\')" class="bg-danger/20 text-danger px-3 rounded text-xs font-bold">Delete</button></div></div>';
                 }).join('') || '<p class="col-span-full text-center p-8 text-textMuted">No files uploaded.</p>';
-            };
+            });
         }
 
         function viewPdf(id) {
-            pdfDB.transaction('pdfs', 'readonly').objectStore('pdfs').get(id).onsuccess = function(e) {
-                if (e.target.result) window.open(URL.createObjectURL(base64ToBlob(e.target.result.fileData)), '_blank');
-            };
+            supa.from('pdf_files').select('file_data').eq('id', id).single().then(function(res) {
+                if (res.error || !res.data) { showToast('File not found.'); return; }
+                window.open(URL.createObjectURL(base64ToBlob(res.data.file_data)), '_blank');
+            });
         }
 
         function deletePdf(id) {
             if (confirm("Delete this file?")) {
-                var tx = pdfDB.transaction('pdfs', 'readwrite');
-                tx.objectStore('pdfs').delete(id);
-                tx.oncomplete = function() { renderPdfs(); showToast("File deleted."); };
+                supa.from('pdf_files').delete().eq('id', id).then(function(res) {
+                    if (res.error) { showToast('Delete failed.'); return; }
+                    renderPdfs();
+                    showToast("File deleted.");
+                });
             }
         }
 
@@ -1075,57 +1137,85 @@
             var reader = new FileReader();
             document.getElementById('file-save-btn').textContent = "Saving...";
             reader.onload = function(event) {
-                var newFile = { id: 'file_' + Date.now(), title: document.getElementById('file-title').value, empId: document.getElementById('file-link-emp').value, fileName: file.name, fileType: file.type, date: new Date().toISOString().split('T')[0], data: event.target.result };
-                var tx = pdfDB.transaction('ops_files', 'readwrite');
-                tx.objectStore('ops_files').add(newFile);
-                tx.oncomplete = function() { closeGeneralFileForm(); renderGeneralFiles(); showToast("File saved."); document.getElementById('file-save-btn').textContent = "Save"; };
+                var newFile = {
+                    id: 'file_' + Date.now(),
+                    title: document.getElementById('file-title').value,
+                    emp_id: document.getElementById('file-link-emp').value,
+                    file_name: file.name,
+                    file_type: file.type,
+                    date: new Date().toISOString().split('T')[0],
+                    data: event.target.result
+                };
+                supa.from('staff_files').insert(newFile).then(function(res) {
+                    document.getElementById('file-save-btn').textContent = "Save";
+                    if (res.error) { showToast('Upload failed: ' + res.error.message); return; }
+                    closeGeneralFileForm();
+                    renderGeneralFiles();
+                    showToast("File saved.");
+                });
             };
             reader.readAsDataURL(file);
         }
 
         function renderGeneralFiles() {
-            if (!pdfDB) return;
-            pdfDB.transaction('ops_files', 'readonly').objectStore('ops_files').getAll().onsuccess = function(e) {
-                var files = e.target.result;
+            supa.from('staff_files').select('id, title, emp_id, date').order('created_at', { ascending: false }).then(function(res) {
+                if (res.error) { document.getElementById('general-file-list').innerHTML = '<p class="text-danger p-4">Load error.</p>'; return; }
+                var files = res.data || [];
                 document.getElementById('general-file-list').innerHTML = files.map(function(f) {
-                    var emp = db.employees.find(function(x) { return x.id === f.empId; });
+                    var emp = db.employees.find(function(x) { return x.id === f.emp_id; });
                     var empLabel = emp ? emp.name : '';
                     return '<div class="glass-panel p-4 rounded-xl border border-white/10 flex flex-col justify-between"><div><div class="font-bold truncate text-white text-xs mb-1">' + f.title + '</div>' + (empLabel ? '<div class="text-[10px] text-primary mb-2">&#128279; ' + empLabel + '</div>' : '') + '<div class="text-[10px] text-textMuted mb-3">' + f.date + '</div></div><div class="flex gap-2"><button onclick="viewGeneralFile(\'' + f.id + '\')" class="flex-1 bg-white/10 py-2 rounded text-xs font-bold">View</button><button onclick="deleteGeneralFile(\'' + f.id + '\')" class="bg-danger/20 text-danger px-3 rounded text-xs font-bold">Delete</button></div></div>';
                 }).join('') || '<p class="col-span-full text-center p-8 text-textMuted">No files uploaded.</p>';
-            };
+            });
         }
 
         function viewGeneralFile(id) {
-            pdfDB.transaction('ops_files', 'readonly').objectStore('ops_files').get(id).onsuccess = function(e) {
-                var f = e.target.result;
-                if (f) window.open(URL.createObjectURL(base64ToBlob(f.data)), '_blank');
-            };
+            supa.from('staff_files').select('data').eq('id', id).single().then(function(res) {
+                if (res.error || !res.data) { showToast('File not found.'); return; }
+                window.open(URL.createObjectURL(base64ToBlob(res.data.data)), '_blank');
+            });
         }
 
         function deleteGeneralFile(id) {
             if (confirm("Delete this file?")) {
-                var tx = pdfDB.transaction('ops_files', 'readwrite');
-                tx.objectStore('ops_files').delete(id);
-                tx.oncomplete = function() { renderGeneralFiles(); showToast("File deleted."); };
+                supa.from('staff_files').delete().eq('id', id).then(function(res) {
+                    if (res.error) { showToast('Delete failed.'); return; }
+                    renderGeneralFiles();
+                    showToast("File deleted.");
+                });
             }
         }
 
         // --- Settings ---
         function saveSettings() {
             db.settings.storeName = document.getElementById('set-store').value;
-            document.getElementById('sidebar-store-name').textContent = db.settings.storeName;
-            saveDB();
-            showToast("Settings saved.");
+            supa.from('settings').upsert({ id: 'main', data: db.settings }).then(function(res) {
+                if (res.error) { showToast('Save failed: ' + res.error.message); return; }
+                document.getElementById('sidebar-store-name').textContent = db.settings.storeName;
+                showToast("Settings saved.");
+            });
         }
 
         async function exportData() {
+            showLoading('Preparing backup...');
             try {
-                var allPdfs = [], allFiles = [];
-                if (pdfDB) {
-                    allPdfs = await new Promise(function(res) { pdfDB.transaction('pdfs', 'readonly').objectStore('pdfs').getAll().onsuccess = function(e) { res(e.target.result); }; });
-                    allFiles = await new Promise(function(res) { pdfDB.transaction('ops_files', 'readonly').objectStore('ops_files').getAll().onsuccess = function(e) { res(e.target.result); }; });
-                }
-                var backupData = { settings: db.settings, employees: db.employees, docs: db.docs, recipes: db.recipes, pdfs: allPdfs, files: allFiles, version: "4.9.5" };
+                var results = await Promise.all([
+                    supa.from('employees').select('*'),
+                    supa.from('docs').select('*'),
+                    supa.from('recipes').select('*'),
+                    supa.from('settings').select('*').eq('id', 'main').maybeSingle(),
+                    supa.from('pdf_files').select('*'),
+                    supa.from('staff_files').select('*')
+                ]);
+                var backupData = {
+                    version: "4.9.6",
+                    settings:    results[3].data ? results[3].data.data : db.settings,
+                    employees:   (results[0].data || []).map(function(r) { return r.data; }),
+                    docs:        results[1].data || [],
+                    recipes:     (results[2].data || []).map(function(r) { return r.data; }),
+                    pdf_files:   results[4].data || [],
+                    staff_files: results[5].data || []
+                };
                 var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupData));
                 var node = document.createElement('a');
                 node.setAttribute("href", dataStr);
@@ -1133,67 +1223,82 @@
                 document.body.appendChild(node);
                 node.click();
                 node.remove();
+                hideLoading();
                 showToast("Backup complete.");
             } catch (err) {
+                hideLoading();
                 alert("Backup failed: " + err.message);
             }
         }
 
-        // FIX #6: importData now properly restores IndexedDB (pdfs + files)
+        // FIX #6 (Supabase): importData restores all data to Supabase
         function importData(e) {
             var file = e.target.files[0];
             var reader = new FileReader();
             reader.onload = function(event) {
                 try {
                     var imported = JSON.parse(event.target.result);
-                    if (!confirm("This will overwrite ALL current data. Continue?")) return;
+                    if (!confirm("This will overwrite ALL current data in Supabase. Continue?")) return;
+                    showLoading('Restoring backup...');
 
-                    // Restore localStorage data
-                    db.settings = imported.settings || { storeName: "IRON AGE" };
-                    db.employees = imported.employees || [];
-                    db.docs = imported.docs || [];
-                    db.recipes = imported.recipes || [];
-                    saveDB();
+                    var ops = [];
 
-                    // Restore IndexedDB data
-                    var pdfsToRestore = imported.pdfs || [];
-                    var filesToRestore = imported.files || [];
+                    // Settings
+                    var settingsData = imported.settings || { storeName: "IRON AGE" };
+                    ops.push(supa.from('settings').upsert({ id: 'main', data: settingsData }));
 
-                    if (!pdfDB || (pdfsToRestore.length === 0 && filesToRestore.length === 0)) {
-                        location.reload();
-                        return;
-                    }
+                    // Employees
+                    var emps = imported.employees || [];
+                    emps.forEach(function(emp) {
+                        ops.push(supa.from('employees').upsert({ id: emp.id, data: emp }));
+                    });
 
-                    // Clear and restore pdfs
-                    var clearPdfsTx = pdfDB.transaction('pdfs', 'readwrite');
-                    clearPdfsTx.objectStore('pdfs').clear();
-                    clearPdfsTx.oncomplete = function() {
-                        if (pdfsToRestore.length > 0) {
-                            var writePdfsTx = pdfDB.transaction('pdfs', 'readwrite');
-                            var store = writePdfsTx.objectStore('pdfs');
-                            pdfsToRestore.forEach(function(pdf) { store.put(pdf); });
-                            writePdfsTx.oncomplete = function() { restoreFiles(); };
-                        } else {
-                            restoreFiles();
-                        }
-                    };
+                    // Docs
+                    var docs = imported.docs || [];
+                    docs.forEach(function(r) {
+                        ops.push(supa.from('docs').upsert({
+                            id: r.id, emp_id: r.emp_id, type: r.type,
+                            data: r.data, created_at_ms: r.created_at_ms
+                        }));
+                    });
 
-                    function restoreFiles() {
-                        var clearFilesTx = pdfDB.transaction('ops_files', 'readwrite');
-                        clearFilesTx.objectStore('ops_files').clear();
-                        clearFilesTx.oncomplete = function() {
-                            if (filesToRestore.length > 0) {
-                                var writeFilesTx = pdfDB.transaction('ops_files', 'readwrite');
-                                var store = writeFilesTx.objectStore('ops_files');
-                                filesToRestore.forEach(function(f) { store.put(f); });
-                                writeFilesTx.oncomplete = function() { location.reload(); };
-                            } else {
-                                location.reload();
-                            }
-                        };
-                    }
+                    // Recipes
+                    var recipes = imported.recipes || [];
+                    recipes.forEach(function(r) {
+                        ops.push(supa.from('recipes').upsert({ id: r.id, data: r }));
+                    });
+
+                    // PDF files
+                    var pdfs = imported.pdf_files || imported.pdfs || [];
+                    pdfs.forEach(function(p) {
+                        ops.push(supa.from('pdf_files').upsert({
+                            id: p.id, title: p.title, date: p.date, file_data: p.file_data || p.fileData
+                        }));
+                    });
+
+                    // Staff files
+                    var staffFiles = imported.staff_files || imported.files || [];
+                    staffFiles.forEach(function(f) {
+                        ops.push(supa.from('staff_files').upsert({
+                            id: f.id, title: f.title,
+                            emp_id: f.emp_id || f.empId,
+                            file_name: f.file_name || f.fileName,
+                            file_type: f.file_type || f.fileType,
+                            date: f.date, data: f.data
+                        }));
+                    });
+
+                    Promise.all(ops).then(function() {
+                        hideLoading();
+                        showToast("Restore complete. Reloading...");
+                        setTimeout(function() { location.reload(); }, 1200);
+                    }).catch(function(err) {
+                        hideLoading();
+                        alert("Restore failed: " + err.message);
+                    });
 
                 } catch (err) {
+                    hideLoading();
                     alert("Invalid backup file.");
                 }
             };
@@ -1326,17 +1431,15 @@
             var signedDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
             var docIdx = db.docs.findIndex(function(d) { return d.id === currentPreviewDocId; });
             if (docIdx > -1) {
-                if (currentSignType === 'emp') {
-                    db.docs[docIdx].data.empSign = base64Img;
-                    db.docs[docIdx].data.empSignDate = signedDate;
-                }
-                if (currentSignType === 'mgr') {
-                    db.docs[docIdx].data.mgrSign = base64Img;
-                    db.docs[docIdx].data.mgrSignDate = signedDate;
-                }
-                saveDB();
-                closeSignature();
-                openPreview(currentPreviewDocId);
+                var doc = db.docs[docIdx];
+                if (currentSignType === 'emp') { doc.empSign = base64Img; doc.empSignDate = signedDate; }
+                if (currentSignType === 'mgr') { doc.mgrSign = base64Img; doc.mgrSignDate = signedDate; }
+                // Persist updated data to Supabase
+                supa.from('docs').update({ data: doc }).eq('id', doc.id).then(function(res) {
+                    if (res.error) { showToast('Signature save failed.'); return; }
+                    closeSignature();
+                    openPreview(currentPreviewDocId);
+                });
             }
         }
 
