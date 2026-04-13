@@ -361,15 +361,19 @@
                                 </div>
                                 <button type="submit" class="w-full bg-primary py-3 rounded-lg font-bold">Save Letter</button>
                             </form>
-                            <!-- NEW HIRE PACKET FORM -->
-                            <form id="form-NEWHIRE" class="hidden tpl-form space-y-6" onsubmit="saveDocNewHire(event)">
-                                <p class="text-xs text-textMuted">Checklist, LS-54, Alcohol Acknowledgment, Arbitration Agreement, Direct Deposit — all in one packet.</p>
+                            <!-- NEW HIRE PACKET FORM — v5.0.0 full fields -->
+                            <form id="form-NEWHIRE" class="hidden tpl-form space-y-5" onsubmit="saveDocNewHire(event)">
+                                <p class="text-xs text-textMuted">Complete all applicable sections. Employer info auto-loaded from Settings.</p>
+
+                                <!-- Header -->
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div><label class="block text-xs text-textMuted mb-1">Today's Date *</label><input type="date" id="nh-date" required class="w-full bg-surface border border-white/10 rounded p-3 text-white [color-scheme:dark]"></div>
-                                    <div><label class="block text-xs text-textMuted mb-1">Prepared By *</label><input type="text" id="nh-preparer" required placeholder="Manager Name" class="w-full bg-surface border border-white/10 rounded p-3 text-white"></div>
+                                    <div><label class="block text-xs text-textMuted mb-1">Prepared By *</label><input type="text" id="nh-preparer" required placeholder="Manager name" class="w-full bg-surface border border-white/10 rounded p-3 text-white"></div>
                                 </div>
+
+                                <!-- 1. Checklist -->
                                 <div class="border border-white/10 rounded-lg p-4 space-y-3">
-                                    <h4 class="text-sm font-bold text-primary">Checklist Items</h4>
+                                    <h4 class="text-sm font-bold text-primary flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">checklist</span> New Employee Checklist</h4>
                                     <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
                                         <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="nh-chk-w4" class="accent-primary w-4 h-4"> W-4</label>
                                         <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="nh-chk-id" class="accent-primary w-4 h-4"> Copy of ID and SSN Card</label>
@@ -380,24 +384,97 @@
                                         <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="nh-chk-arb" class="accent-primary w-4 h-4"> Arbitration of Employment Disputes</label>
                                     </div>
                                 </div>
-                                <div class="border border-white/10 rounded-lg p-4 space-y-3">
-                                    <h4 class="text-sm font-bold text-primary">LS-54 — Pay Rate Notice</h4>
-                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div><label class="block text-xs text-textMuted mb-1">Pay Rate ($/hr) *</label><input type="text" id="nh-wage" required placeholder="e.g. 16.50" class="w-full bg-surface border border-white/10 rounded p-3 text-white"></div>
-                                        <div><label class="block text-xs text-textMuted mb-1">Overtime Rate ($/hr)</label><input type="text" id="nh-ot-wage" placeholder="auto 1.5x" class="w-full bg-surface border border-white/10 rounded p-3 text-white"></div>
-                                        <div><label class="block text-xs text-textMuted mb-1">Regular Payday</label><input type="text" id="nh-payday" value="Tuesday" class="w-full bg-surface border border-white/10 rounded p-3 text-white"></div>
-                                        <div><label class="block text-xs text-textMuted mb-1">Pay Frequency</label><select id="nh-payfreq" class="w-full bg-surface border border-white/10 rounded p-3 text-white"><option>Weekly</option><option>Bi-weekly</option><option>Other</option></select></div>
+
+                                <!-- 2. LS-54 Full Fields -->
+                                <div class="border border-white/10 rounded-lg p-4 space-y-4">
+                                    <h4 class="text-sm font-bold text-primary flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">description</span> LS-54 — Notice of Pay Rate & Payday</h4>
+                                    <p class="text-xs text-textMuted">Employer info auto-filled from Settings. Edit if needed for this document.</p>
+
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                        <div><label class="block text-xs text-textMuted mb-1">Legal Business Name</label><input type="text" id="nh-biz-name" class="w-full bg-surface border border-white/10 rounded p-3 text-white"></div>
+                                        <div><label class="block text-xs text-textMuted mb-1">DBA Name</label><input type="text" id="nh-dba" class="w-full bg-surface border border-white/10 rounded p-3 text-white"></div>
+                                        <div><label class="block text-xs text-textMuted mb-1">FEIN (optional)</label><input type="text" id="nh-fein" class="w-full bg-surface border border-white/10 rounded p-3 text-white"></div>
+                                        <div><label class="block text-xs text-textMuted mb-1">Phone</label><input type="text" id="nh-biz-phone" class="w-full bg-surface border border-white/10 rounded p-3 text-white"></div>
+                                        <div class="md:col-span-2"><label class="block text-xs text-textMuted mb-1">Physical Address</label><input type="text" id="nh-biz-address" class="w-full bg-surface border border-white/10 rounded p-3 text-white"></div>
+                                        <div class="md:col-span-2"><label class="block text-xs text-textMuted mb-1">Mailing Address</label><input type="text" id="nh-biz-mail" class="w-full bg-surface border border-white/10 rounded p-3 text-white"></div>
+                                    </div>
+
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 border-t border-white/5">
+                                        <div>
+                                            <label class="block text-xs text-textMuted mb-1">2. Notice Given</label>
+                                            <div class="space-y-1">
+                                                <label class="flex items-center gap-2 text-sm cursor-pointer"><input type="radio" id="nh-notice-hire" name="nh-notice" value="At hiring" class="accent-primary"> At hiring</label>
+                                                <label class="flex items-center gap-2 text-sm cursor-pointer"><input type="radio" id="nh-notice-change" name="nh-notice" value="Before a change in pay rate" class="accent-primary"> Before a change in pay rate(s), allowances or payday</label>
+                                            </div>
+                                        </div>
+                                        <div><label class="block text-xs text-textMuted mb-1">3. Employee's Rate of Pay *</label>
+                                            <div class="flex items-center gap-2"><span class="text-white font-bold">$</span><input type="text" id="nh-wage" required placeholder="0.00" class="flex-1 bg-surface border border-white/10 rounded p-3 text-white"><span class="text-textMuted text-sm">/ hr</span></div>
+                                        </div>
+                                    </div>
+
+                                    <div class="pt-2 border-t border-white/5">
+                                        <label class="block text-xs font-bold text-textMuted mb-2">4. Allowances Taken</label>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                            <label class="flex items-center gap-2 text-sm cursor-pointer md:col-span-2"><input type="checkbox" id="nh-allow-none" onchange="toggleAllowanceNone()" class="accent-primary w-4 h-4"> None</label>
+                                            <div class="flex items-center gap-2"><label class="flex items-center gap-2 text-sm"><input type="checkbox" id="nh-allow-tips" class="accent-primary w-4 h-4"> Tips:</label><input type="text" id="nh-allow-tips-amt" placeholder="amount" class="flex-1 bg-surface border border-white/10 rounded p-2 text-white text-xs"><span class="text-xs text-textMuted">/hr</span></div>
+                                            <div class="flex items-center gap-2"><label class="flex items-center gap-2 text-sm"><input type="checkbox" id="nh-allow-meals" class="accent-primary w-4 h-4"> Meals:</label><input type="text" id="nh-allow-meals-amt" placeholder="amount" class="flex-1 bg-surface border border-white/10 rounded p-2 text-white text-xs"><span class="text-xs text-textMuted">/meal</span></div>
+                                            <div class="flex items-center gap-2"><label class="flex items-center gap-2 text-sm"><input type="checkbox" id="nh-allow-lodging" class="accent-primary w-4 h-4"> Lodging:</label><input type="text" id="nh-allow-lodging-amt" placeholder="amount" class="flex-1 bg-surface border border-white/10 rounded p-2 text-white text-xs"></div>
+                                            <div class="flex items-center gap-2"><label class="flex items-center gap-2 text-sm"><input type="checkbox" id="nh-allow-other" class="accent-primary w-4 h-4"> Other:</label><input type="text" id="nh-allow-other-amt" placeholder="describe" class="flex-1 bg-surface border border-white/10 rounded p-2 text-white text-xs"></div>
+                                        </div>
+                                    </div>
+
+                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2 border-t border-white/5">
+                                        <div><label class="block text-xs text-textMuted mb-1">5. Regular Payday</label><input type="text" id="nh-payday" value="Tuesday" class="w-full bg-surface border border-white/10 rounded p-3 text-white"></div>
+                                        <div>
+                                            <label class="block text-xs text-textMuted mb-1">6. Pay is</label>
+                                            <select id="nh-payfreq" onchange="togglePayFreqOther()" class="w-full bg-surface border border-white/10 rounded p-3 text-white">
+                                                <option value="Weekly">Weekly</option>
+                                                <option value="Bi-weekly">Bi-weekly</option>
+                                                <option value="Other">Other</option>
+                                            </select>
+                                            <input type="text" id="nh-payfreq-other" placeholder="Specify..." class="hidden w-full bg-surface border border-white/10 rounded p-2 text-white text-xs mt-1">
+                                        </div>
+                                        <div><label class="block text-xs text-textMuted mb-1">7. Overtime Pay Rate</label>
+                                            <div class="flex items-center gap-2"><span class="text-white font-bold">$</span><input type="text" id="nh-ot-wage" placeholder="0.00" class="flex-1 bg-surface border border-white/10 rounded p-3 text-white"><span class="text-textMuted text-sm">/ hr</span></div>
+                                        </div>
+                                    </div>
+
+                                    <div class="pt-2 border-t border-white/5">
+                                        <label class="block text-xs font-bold text-textMuted mb-2">8. Employee Acknowledgement Language</label>
+                                        <div class="space-y-2">
+                                            <label class="flex items-center gap-2 text-sm cursor-pointer"><input type="radio" id="nh-lang-english" name="nh-lang" value="english" checked class="accent-primary"> Given in English (primary language)</label>
+                                            <div class="flex items-center gap-2">
+                                                <label class="flex items-center gap-2 text-sm cursor-pointer"><input type="radio" id="nh-lang-other" name="nh-lang" value="other" class="accent-primary"> Primary language is:</label>
+                                                <input type="text" id="nh-lang-other-text" placeholder="e.g. Spanish" class="flex-1 bg-surface border border-white/10 rounded p-2 text-white text-xs">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="pt-2 border-t border-white/5 grid grid-cols-1 md:grid-cols-2 gap-3">
+                                        <div><label class="block text-xs text-textMuted mb-1">Preparer's Name and Title</label><input type="text" id="nh-ls54-preparer" placeholder="e.g. Victor (Manager)" class="w-full bg-surface border border-white/10 rounded p-3 text-white"></div>
                                     </div>
                                 </div>
+
+                                <!-- 3. Direct Deposit -->
                                 <div class="border border-white/10 rounded-lg p-4 space-y-3">
-                                    <h4 class="text-sm font-bold text-primary">Direct Deposit</h4>
-                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div><label class="block text-xs text-textMuted mb-1">Bank Routing Number</label><input type="text" id="nh-routing" placeholder="9-digit routing number" class="w-full bg-surface border border-white/10 rounded p-3 text-white"></div>
+                                    <h4 class="text-sm font-bold text-primary flex items-center gap-2"><span class="material-symbols-outlined text-[16px]">account_balance</span> Direct Deposit Authorization</h4>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                        <div><label class="block text-xs text-textMuted mb-1">Account Holder Name</label><input type="text" id="nh-dd-name" placeholder="Full name on bank account" class="w-full bg-surface border border-white/10 rounded p-3 text-white"></div>
+                                        <div><label class="block text-xs text-textMuted mb-1">Address</label><input type="text" id="nh-dd-address" placeholder="Street address" class="w-full bg-surface border border-white/10 rounded p-3 text-white"></div>
+                                        <div><label class="block text-xs text-textMuted mb-1">City, State, ZIP</label><input type="text" id="nh-dd-city" placeholder="City, State ZIP" class="w-full bg-surface border border-white/10 rounded p-3 text-white"></div>
+                                        <div><label class="block text-xs text-textMuted mb-1">Account Type</label><select id="nh-acct-type" class="w-full bg-surface border border-white/10 rounded p-3 text-white"><option value="Checking">Checking Account</option><option value="Savings">Savings / MIA / Money Market</option></select></div>
+                                        <div><label class="block text-xs text-textMuted mb-1">Routing Number</label><input type="text" id="nh-routing" placeholder="9-digit routing number" class="w-full bg-surface border border-white/10 rounded p-3 text-white"></div>
                                         <div><label class="block text-xs text-textMuted mb-1">Account Number</label><input type="text" id="nh-account" placeholder="Account number" class="w-full bg-surface border border-white/10 rounded p-3 text-white"></div>
-                                        <div><label class="block text-xs text-textMuted mb-1">Account Type</label><select id="nh-acct-type" class="w-full bg-surface border border-white/10 rounded p-3 text-white"><option>Checking</option><option>Savings</option></select></div>
                                     </div>
                                 </div>
-                                <button type="submit" class="w-full bg-primary py-3 rounded-lg font-bold">Save New Hire Packet</button>
+
+                                <!-- 4. Alcohol & Arbitration note -->
+                                <div class="border border-white/10 rounded-lg p-4 bg-white/5">
+                                    <h4 class="text-sm font-bold text-primary flex items-center gap-2 mb-2"><span class="material-symbols-outlined text-[16px]">info</span> Alcohol Acknowledgment & Arbitration Agreement</h4>
+                                    <p class="text-xs text-textMuted">These documents will be generated with full text and employee name/date auto-filled. Signatures will be added electronically after saving.</p>
+                                </div>
+
+                                <button type="submit" class="w-full bg-primary py-3 rounded-lg font-bold text-white">Save New Hire Packet</button>
                             </form>
 
                             <!-- EQUIPMENT DEPOSIT FORM -->
@@ -518,8 +595,31 @@
                 <div id="view-settings" class="hidden max-w-2xl space-y-6 pb-10">
                     <div class="glass-panel p-6 md:p-8 rounded-xl space-y-6 w-full">
                         <h3 class="text-xl font-bold border-b border-white/10 pb-2">App Settings</h3>
-                        <input type="text" id="set-store" class="w-full bg-surface border border-white/10 rounded-lg p-3 text-white">
-                        <button onclick="saveSettings()" class="w-full bg-white text-black py-3 rounded-lg font-bold">Save Settings</button>
+                        <div class="space-y-3">
+                            <div><label class="block text-xs text-textMuted mb-1">Store / App Name</label>
+                            <input type="text" id="set-store" class="w-full bg-surface border border-white/10 rounded-lg p-3 text-white"></div>
+                        </div>
+
+                        <h3 class="text-xl font-bold border-b border-white/10 pb-2 mt-6">Employer Information <span class="text-xs font-normal text-textMuted">(used in LS-54 and documents)</span></h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div><label class="block text-xs text-textMuted mb-1">Legal Business Name</label>
+                            <input type="text" id="set-biz-name" placeholder="Iron Age Rego Park LLC" class="w-full bg-surface border border-white/10 rounded-lg p-3 text-white"></div>
+                            <div><label class="block text-xs text-textMuted mb-1">DBA Name</label>
+                            <input type="text" id="set-dba" placeholder="Iron Age" class="w-full bg-surface border border-white/10 rounded-lg p-3 text-white"></div>
+                            <div><label class="block text-xs text-textMuted mb-1">FEIN</label>
+                            <input type="text" id="set-fein" placeholder="88-0740180" class="w-full bg-surface border border-white/10 rounded-lg p-3 text-white"></div>
+                            <div><label class="block text-xs text-textMuted mb-1">Phone</label>
+                            <input type="text" id="set-phone" placeholder="(347) 612-4671" class="w-full bg-surface border border-white/10 rounded-lg p-3 text-white"></div>
+                            <div class="md:col-span-2"><label class="block text-xs text-textMuted mb-1">Physical Address</label>
+                            <input type="text" id="set-address" placeholder="6135 Junction Blvd, Rego Park NY 11374" class="w-full bg-surface border border-white/10 rounded-lg p-3 text-white"></div>
+                            <div class="md:col-span-2"><label class="block text-xs text-textMuted mb-1">Mailing Address (if different)</label>
+                            <input type="text" id="set-mail-address" placeholder="Same as physical" class="w-full bg-surface border border-white/10 rounded-lg p-3 text-white"></div>
+                            <div><label class="block text-xs text-textMuted mb-1">Default Manager Name</label>
+                            <input type="text" id="set-mgr-name" placeholder="Victor (Manager)" class="w-full bg-surface border border-white/10 rounded-lg p-3 text-white"></div>
+                            <div><label class="block text-xs text-textMuted mb-1">Manager Title</label>
+                            <input type="text" id="set-mgr-title" placeholder="Manager" class="w-full bg-surface border border-white/10 rounded-lg p-3 text-white"></div>
+                        </div>
+                        <button onclick="saveSettings()" class="w-full bg-white text-black py-3 rounded-lg font-bold">Save All Settings</button>
 
                         <h3 class="text-xl font-bold border-b border-white/10 pb-2 mt-10">Change Password</h3>
                         <div class="space-y-3">
@@ -646,8 +746,16 @@
                 });
                 db.recipes = (recipeRes.data || []).map(function(r) { return r.data; });
 
-                document.getElementById('set-store').value = db.settings.storeName;
-                document.getElementById('sidebar-store-name').textContent = db.settings.storeName;
+                document.getElementById('set-store').value          = db.settings.storeName || '';
+                document.getElementById('sidebar-store-name').textContent = db.settings.storeName || '';
+                document.getElementById('set-biz-name').value     = db.settings.bizName || '';
+                document.getElementById('set-dba').value          = db.settings.dba || '';
+                document.getElementById('set-fein').value         = db.settings.fein || '';
+                document.getElementById('set-phone').value        = db.settings.phone || '';
+                document.getElementById('set-address').value      = db.settings.address || '';
+                document.getElementById('set-mail-address').value = db.settings.mailAddress || '';
+                document.getElementById('set-mgr-name').value     = db.settings.mgrName || '';
+                document.getElementById('set-mgr-title').value    = db.settings.mgrTitle || '';
                 hideLoading();
                 switchMainTab('dashboard');
                 renderEmployees();
@@ -1071,6 +1179,14 @@
                 document.getElementById('ev-date').value = today;
                 document.getElementById('nh-date').value = today;
                 document.getElementById('dep-date').value = today;
+                // Auto-fill employer info for new NH packet
+                autoFillNHEmployer();
+                if (db.settings && db.settings.mgrName) {
+                    document.getElementById('nh-preparer').value = db.settings.mgrName;
+                    document.getElementById('nh-ls54-preparer').value = db.settings.mgrName + (db.settings.mgrTitle ? ' (' + db.settings.mgrTitle + ')' : '');
+                }
+                document.getElementById('nh-notice-hire').checked = true;
+                document.getElementById('nh-lang-english').checked = true;
                 // Reset deposit items
                 document.getElementById('deposit-item-list').innerHTML = '';
                 addDepositRow('S-Shirt', 20, 1);
@@ -1097,11 +1213,23 @@
             if (!emp) return;
             if (emp.hire) document.getElementById('ev-start').value = emp.hire;
             // Auto-fill wage into New Hire Packet LS-54
-            if (emp.wage && document.getElementById('nh-wage')) {
-                document.getElementById('nh-wage').value = emp.wage;
-                // Auto-calc OT rate (1.5x)
-                var rate = parseFloat(emp.wage);
-                if (!isNaN(rate)) document.getElementById('nh-ot-wage').value = (rate * 1.5).toFixed(2);
+            if (document.getElementById('nh-wage')) {
+                if (emp.wage) {
+                    document.getElementById('nh-wage').value = emp.wage;
+                    var rate = parseFloat(emp.wage);
+                    if (!isNaN(rate)) document.getElementById('nh-ot-wage').value = (rate * 1.5).toFixed(2);
+                }
+                // Auto-fill dd-name with employee name
+                if (emp.name) document.getElementById('nh-dd-name').value = emp.name;
+                // Auto-fill employer info from settings
+                autoFillNHEmployer();
+                // Auto-fill preparer from settings
+                if (db.settings && db.settings.mgrName) {
+                    document.getElementById('nh-preparer').value = db.settings.mgrName;
+                    document.getElementById('nh-ls54-preparer').value = db.settings.mgrName + (db.settings.mgrTitle ? ' (' + db.settings.mgrTitle + ')' : '');
+                }
+                // Default notice = At hiring
+                document.getElementById('nh-notice-hire').checked = true;
             }
         }
 
@@ -1156,22 +1284,48 @@
                 document.getElementById('ev-mgr-phone').value = d.mgrPhone;
                 document.getElementById('ev-mgr-email').value = d.mgrEmail;
             } else if (doc.type === 'NEWHIRE') {
-                document.getElementById('nh-date').value = d.date;
+                document.getElementById('nh-date').value    = d.date || '';
                 document.getElementById('nh-preparer').value = d.preparer || '';
-                document.getElementById('nh-chk-w4').checked = d.chkW4 || false;
-                document.getElementById('nh-chk-id').checked = d.chkId || false;
-                document.getElementById('nh-chk-ls54').checked = d.chkLs54 || false;
-                document.getElementById('nh-chk-dd').checked = d.chkDd || false;
-                document.getElementById('nh-chk-alc').checked = d.chkAlc || false;
+                document.getElementById('nh-chk-w4').checked     = d.chkW4 || false;
+                document.getElementById('nh-chk-id').checked     = d.chkId || false;
+                document.getElementById('nh-chk-ls54').checked   = d.chkLs54 || false;
+                document.getElementById('nh-chk-dd').checked     = d.chkDd || false;
+                document.getElementById('nh-chk-alc').checked    = d.chkAlc || false;
                 document.getElementById('nh-chk-harass').checked = d.chkHarass || false;
-                document.getElementById('nh-chk-arb').checked = d.chkArb || false;
-                document.getElementById('nh-wage').value = d.wage || '';
-                document.getElementById('nh-ot-wage').value = d.otWage || '';
-                document.getElementById('nh-payday').value = d.payday || 'Tuesday';
-                document.getElementById('nh-payfreq').value = d.payfreq || 'Weekly';
-                document.getElementById('nh-routing').value = d.routing || '';
-                document.getElementById('nh-account').value = d.account || '';
-                document.getElementById('nh-acct-type').value = d.acctType || 'Checking';
+                document.getElementById('nh-chk-arb').checked    = d.chkArb || false;
+                document.getElementById('nh-biz-name').value     = d.bizName || '';
+                document.getElementById('nh-dba').value          = d.dba || '';
+                document.getElementById('nh-fein').value         = d.fein || '';
+                document.getElementById('nh-biz-phone').value    = d.bizPhone || '';
+                document.getElementById('nh-biz-address').value  = d.bizAddress || '';
+                document.getElementById('nh-biz-mail').value     = d.bizMail || '';
+                if (d.noticeGiven === 'Before a change in pay rate') document.getElementById('nh-notice-change').checked = true;
+                else document.getElementById('nh-notice-hire').checked = true;
+                document.getElementById('nh-wage').value         = d.wage || '';
+                document.getElementById('nh-allow-none').checked     = d.allowNone || false;
+                document.getElementById('nh-allow-tips').checked     = d.allowTips || false;
+                document.getElementById('nh-allow-tips-amt').value   = d.allowTipsAmt || '';
+                document.getElementById('nh-allow-meals').checked    = d.allowMeals || false;
+                document.getElementById('nh-allow-meals-amt').value  = d.allowMealsAmt || '';
+                document.getElementById('nh-allow-lodging').checked  = d.allowLodging || false;
+                document.getElementById('nh-allow-lodging-amt').value= d.allowLodgingAmt || '';
+                document.getElementById('nh-allow-other').checked    = d.allowOther || false;
+                document.getElementById('nh-allow-other-amt').value  = d.allowOtherAmt || '';
+                document.getElementById('nh-payday').value       = d.payday || 'Tuesday';
+                document.getElementById('nh-payfreq').value      = d.payfreq || 'Weekly';
+                document.getElementById('nh-payfreq-other').value= d.payfreqOther || '';
+                togglePayFreqOther();
+                document.getElementById('nh-ot-wage').value      = d.otWage || '';
+                if (d.langChoice === 'other') document.getElementById('nh-lang-other').checked = true;
+                else document.getElementById('nh-lang-english').checked = true;
+                document.getElementById('nh-lang-other-text').value = d.langOther || '';
+                document.getElementById('nh-ls54-preparer').value   = d.ls54Preparer || '';
+                document.getElementById('nh-dd-name').value     = d.ddName || '';
+                document.getElementById('nh-dd-address').value  = d.ddAddress || '';
+                document.getElementById('nh-dd-city').value     = d.ddCity || '';
+                document.getElementById('nh-acct-type').value   = d.acctType || 'Checking';
+                document.getElementById('nh-routing').value     = d.routing || '';
+                document.getElementById('nh-account').value     = d.account || '';
             } else if (doc.type === 'DEPOSIT') {
                 document.getElementById('dep-date').value = d.date;
                 document.getElementById('deposit-item-list').innerHTML = '';
@@ -1346,7 +1500,15 @@
 
         // --- Settings ---
         function saveSettings() {
-            db.settings.storeName = document.getElementById('set-store').value;
+            db.settings.storeName    = document.getElementById('set-store').value;
+            db.settings.bizName      = document.getElementById('set-biz-name').value;
+            db.settings.dba          = document.getElementById('set-dba').value;
+            db.settings.fein         = document.getElementById('set-fein').value;
+            db.settings.phone        = document.getElementById('set-phone').value;
+            db.settings.address      = document.getElementById('set-address').value;
+            db.settings.mailAddress  = document.getElementById('set-mail-address').value;
+            db.settings.mgrName      = document.getElementById('set-mgr-name').value;
+            db.settings.mgrTitle     = document.getElementById('set-mgr-title').value;
             supa.from('settings').upsert({ id: 'main', data: db.settings }).then(function(res) {
                 if (res.error) { showToast('Save failed: ' + res.error.message); return; }
                 document.getElementById('sidebar-store-name').textContent = db.settings.storeName;
@@ -1366,7 +1528,7 @@
                     supa.from('staff_files').select('*')
                 ]);
                 var backupData = {
-                    version: "4.9.9",
+                    version: "5.0.0",
                     settings:    results[3].data ? results[3].data.data : db.settings,
                     employees:   (results[0].data || []).map(function(r) { return r.data; }),
                     docs:        results[1].data || [],
@@ -1463,6 +1625,30 @@
             reader.readAsText(file);
         }
 
+        /* ── New Hire form helpers ── */
+        function toggleAllowanceNone() {
+            var none = document.getElementById('nh-allow-none').checked;
+            ['nh-allow-tips','nh-allow-meals','nh-allow-lodging','nh-allow-other'].forEach(function(id) {
+                document.getElementById(id).checked = false;
+                document.getElementById(id).disabled = none;
+            });
+        }
+        function togglePayFreqOther() {
+            var sel = document.getElementById('nh-payfreq').value;
+            document.getElementById('nh-payfreq-other').classList.toggle('hidden', sel !== 'Other');
+        }
+        function autoFillNHEmployer() {
+            var s = db.settings;
+            if (!s) return;
+            if (s.bizName)     document.getElementById('nh-biz-name').value    = s.bizName;
+            if (s.dba)         document.getElementById('nh-dba').value         = s.dba;
+            if (s.fein)        document.getElementById('nh-fein').value        = s.fein;
+            if (s.phone)       document.getElementById('nh-biz-phone').value   = s.phone;
+            if (s.address)     document.getElementById('nh-biz-address').value = s.address;
+            if (s.mailAddress) document.getElementById('nh-biz-mail').value    = s.mailAddress;
+            if (s.mgrName)     document.getElementById('nh-ls54-preparer').value = s.mgrName + (s.mgrTitle ? ' (' + s.mgrTitle + ')' : '');
+        }
+
         /* ── Deposit helpers ── */
         function addDepositRow(item, deposit, qty) {
             item = item || ''; deposit = deposit || ''; qty = qty || 1;
@@ -1510,28 +1696,57 @@
         /* ── Save: New Hire Packet ── */
         function saveDocNewHire(e) {
             e.preventDefault();
+            var noticeSel = document.querySelector('input[name="nh-notice"]:checked');
+            var langSel   = document.querySelector('input[name="nh-lang"]:checked');
             upsertDoc({
                 id: editingDocId || 'doc_' + Date.now(),
                 type: 'NEWHIRE',
                 empId: document.getElementById('common-emp-select').value,
                 createdAt: editingDocId ? db.docs.find(function(d) { return d.id === editingDocId; }).createdAt : Date.now(),
                 data: {
-                    date:      document.getElementById('nh-date').value,
-                    preparer:  document.getElementById('nh-preparer').value,
-                    chkW4:     document.getElementById('nh-chk-w4').checked,
-                    chkId:     document.getElementById('nh-chk-id').checked,
-                    chkLs54:   document.getElementById('nh-chk-ls54').checked,
-                    chkDd:     document.getElementById('nh-chk-dd').checked,
-                    chkAlc:    document.getElementById('nh-chk-alc').checked,
-                    chkHarass: document.getElementById('nh-chk-harass').checked,
-                    chkArb:    document.getElementById('nh-chk-arb').checked,
-                    wage:      document.getElementById('nh-wage').value,
-                    otWage:    document.getElementById('nh-ot-wage').value,
-                    payday:    document.getElementById('nh-payday').value,
-                    payfreq:   document.getElementById('nh-payfreq').value,
-                    routing:   document.getElementById('nh-routing').value,
-                    account:   document.getElementById('nh-account').value,
-                    acctType:  document.getElementById('nh-acct-type').value
+                    date:           document.getElementById('nh-date').value,
+                    preparer:       document.getElementById('nh-preparer').value,
+                    // Checklist
+                    chkW4:          document.getElementById('nh-chk-w4').checked,
+                    chkId:          document.getElementById('nh-chk-id').checked,
+                    chkLs54:        document.getElementById('nh-chk-ls54').checked,
+                    chkDd:          document.getElementById('nh-chk-dd').checked,
+                    chkAlc:         document.getElementById('nh-chk-alc').checked,
+                    chkHarass:      document.getElementById('nh-chk-harass').checked,
+                    chkArb:         document.getElementById('nh-chk-arb').checked,
+                    // LS-54 employer info
+                    bizName:        document.getElementById('nh-biz-name').value,
+                    dba:            document.getElementById('nh-dba').value,
+                    fein:           document.getElementById('nh-fein').value,
+                    bizPhone:       document.getElementById('nh-biz-phone').value,
+                    bizAddress:     document.getElementById('nh-biz-address').value,
+                    bizMail:        document.getElementById('nh-biz-mail').value,
+                    // LS-54 pay fields
+                    noticeGiven:    noticeSel ? noticeSel.value : 'At hiring',
+                    wage:           document.getElementById('nh-wage').value,
+                    allowNone:      document.getElementById('nh-allow-none').checked,
+                    allowTips:      document.getElementById('nh-allow-tips').checked,
+                    allowTipsAmt:   document.getElementById('nh-allow-tips-amt').value,
+                    allowMeals:     document.getElementById('nh-allow-meals').checked,
+                    allowMealsAmt:  document.getElementById('nh-allow-meals-amt').value,
+                    allowLodging:   document.getElementById('nh-allow-lodging').checked,
+                    allowLodgingAmt:document.getElementById('nh-allow-lodging-amt').value,
+                    allowOther:     document.getElementById('nh-allow-other').checked,
+                    allowOtherAmt:  document.getElementById('nh-allow-other-amt').value,
+                    payday:         document.getElementById('nh-payday').value,
+                    payfreq:        document.getElementById('nh-payfreq').value,
+                    payfreqOther:   document.getElementById('nh-payfreq-other').value,
+                    otWage:         document.getElementById('nh-ot-wage').value,
+                    langChoice:     langSel ? langSel.value : 'english',
+                    langOther:      document.getElementById('nh-lang-other-text').value,
+                    ls54Preparer:   document.getElementById('nh-ls54-preparer').value,
+                    // Direct Deposit
+                    ddName:         document.getElementById('nh-dd-name').value,
+                    ddAddress:      document.getElementById('nh-dd-address').value,
+                    ddCity:         document.getElementById('nh-dd-city').value,
+                    acctType:       document.getElementById('nh-acct-type').value,
+                    routing:        document.getElementById('nh-routing').value,
+                    account:        document.getElementById('nh-account').value
                 }
             });
         }
@@ -1596,61 +1811,196 @@
                     : '<b>' + (emp.name || '') + '</b> was employed at <b>' + store + '</b> from <b>' + d.start + '</b> to <b>' + d.end + '</b>.<br><br>During this period, he/she held the position of <b>' + (emp.pos || '') + '</b>.';
                 html = '<div style="font-family:\'Inter\', Arial, sans-serif; font-size:15px; line-height:1.8; padding:0.5in; color:#000; max-width:800px; margin:0 auto; text-align:justify; background:#fff;"><div style="margin-bottom:40px; font-size:16px;">' + formattedDate + '</div><div style="margin-bottom:30px; font-size:16px;">To Whom It May Concern,</div><div style="font-weight:bold; font-size:18px; margin-bottom:30px; border-bottom:2px solid #000; padding-bottom:5px;">RE: Employment Verification for ' + (emp.name || '') + '</div><p style="margin-bottom:20px;">Please accept this letter as confirmation of the employment history of <b>' + (emp.name || '') + '</b> with <b>' + store + '</b>.</p><p style="margin-bottom:20px;">' + employmentDetail + '</p><p style="margin-bottom:20px;"><b>' + (emp.name || '') + '</b> reported directly to <b>' + d.mgrName + '</b>, who holds the title of <b>' + d.mgrTitle + '</b>. We provide this verification at the request of <b>' + (emp.name || '') + '</b>.</p><p style="margin-bottom:50px;">Should you require any further information, please do not hesitate to contact me.</p><div style="margin-bottom:10px; font-size:16px;">Sincerely,</div><div style="height:70px; margin-bottom:10px; position:relative;">' + (d.mgrSign ? '<img src="' + d.mgrSign + '" style="max-height:100%; max-width:250px; position:absolute; bottom:0; left:0; filter:contrast(1.2);">' : '') + '</div><div style="font-weight:bold; font-size:16px;">' + d.mgrName + '</div><div style="color:#222;">' + d.mgrTitle + '</div><div style="color:#222; margin-bottom:15px;">' + store + '</div><div style="color:#444; font-size:14px; border-top:1px solid #ccc; padding-top:10px; width:250px;">' + d.mgrPhone + '<br>' + d.mgrEmail + '</div></div>';
             } else if (doc.type === 'NEWHIRE') {
-                // ── New Hire Packet print layout ──
+                // ── New Hire Packet — full fidelity, multi-page print layout ──
                 var chk = function(v) { return v ? '&#9745;' : '&#9744;'; };
-                var empSignHtml = d.empSign ? '<img src="' + d.empSign + '" style="position:absolute;bottom:2px;left:0;max-height:50px;max-width:200px;">' : '';
-                html = '<div style="font-family:Arial,sans-serif;color:#000;font-size:13px;line-height:1.6;">' +
-                    // ── Section 1: Checklist ──
-                    '<div style="text-align:center;margin-bottom:18px;">' +
-                    '<div style="font-size:26px;font-weight:900;letter-spacing:-1px;font-family:Georgia,serif;">IRON AGE</div>' +
-                    '<div style="font-size:16px;font-weight:bold;margin-top:4px;border-bottom:3px double #000;padding-bottom:8px;">New Employee Check List</div></div>' +
-                    '<table style="width:100%;border-collapse:collapse;margin-bottom:16px;border:2px solid #000;">' +
-                    '<tr><td style="border:1px solid #000;padding:8px;width:50%;">Employee Name: <br><br><b>' + (emp.name||'') + '</b></td>' +
-                    '<td style="border:1px solid #000;padding:8px;">Prepared By: <br><br><b>' + (d.preparer||'') + '</b></td></tr>' +
-                    '<tr><td colspan="2" style="border:1px solid #000;padding:8px;">Date: <b>' + d.date + '</b></td></tr></table>' +
-                    '<div style="background:#000;color:#fff;font-weight:bold;padding:6px 10px;font-size:13px;">Document Checklist</div>' +
-                    '<div style="border:2px solid #000;border-top:none;padding:12px;margin-bottom:18px;">' +
-                    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">' +
-                    '<div>' + chk(d.chkW4) + ' W-4</div>' +
-                    '<div>' + chk(d.chkId) + ' Copy of ID and SSN Card</div>' +
-                    '<div>' + chk(d.chkLs54) + ' LS 54 Form</div>' +
-                    '<div>' + chk(d.chkDd) + ' Direct Deposit Form</div>' +
-                    '<div>' + chk(d.chkAlc) + ' Alcohol Acknowledgment Form</div>' +
-                    '<div>' + chk(d.chkHarass) + ' Sexual Harassment Prevention Training</div>' +
-                    '<div>' + chk(d.chkArb) + ' Arbitration of Employment Disputes</div>' +
-                    '</div></div>' +
-                    // ── Section 2: LS-54 Pay Rate ──
-                    '<div style="background:#000;color:#fff;font-weight:bold;padding:6px 10px;font-size:13px;">Notice of Pay Rate & Payday — LS 54 (NY Labor Law §195.1)</div>' +
-                    '<table style="width:100%;border-collapse:collapse;border:2px solid #000;border-top:none;margin-bottom:18px;font-size:12px;">' +
-                    '<tr><td style="border:1px solid #000;padding:8px;width:50%;vertical-align:top;">' +
-                    '<b>Employer:</b> Iron Age Rego Park LLC<br><b>DBA:</b> Iron Age<br><b>FEIN:</b> 88-0740180<br><b>Address:</b> 6135 Junction Blvd, Rego Park NY 11374<br><b>Phone:</b> (347) 612-4671</td>' +
-                    '<td style="border:1px solid #000;padding:8px;vertical-align:top;">' +
-                    '<b>Employee Rate:</b> $' + (d.wage||'') + '/hr<br>' +
-                    '<b>Overtime Rate:</b> $' + (d.otWage||'') + '/hr<br>' +
-                    '<b>Regular Payday:</b> ' + (d.payday||'Tuesday') + '<br>' +
-                    '<b>Pay Frequency:</b> ' + (d.payfreq||'Weekly') + '<br>' +
-                    '<b>Notice Given:</b> At Hiring</td></tr></table>' +
-                    // ── Section 3: Direct Deposit ──
-                    '<div style="background:#000;color:#fff;font-weight:bold;padding:6px 10px;font-size:13px;">Direct Deposit Authorization</div>' +
-                    '<table style="width:100%;border-collapse:collapse;border:2px solid #000;border-top:none;margin-bottom:18px;font-size:12px;">' +
-                    '<tr><td style="border:1px solid #000;padding:8px;width:33%;">Account Type:<br><br><b>' + (d.acctType||'') + '</b></td>' +
-                    '<td style="border:1px solid #000;padding:8px;width:33%;">Routing Number:<br><br><b>' + (d.routing||'') + '</b></td>' +
-                    '<td style="border:1px solid #000;padding:8px;">Account Number:<br><br><b>' + (d.account||'') + '</b></td></tr></table>' +
-                    // ── Section 4: Alcohol Ack ──
-                    '<div style="background:#000;color:#fff;font-weight:bold;padding:6px 10px;font-size:13px;">Alcohol Awareness Acknowledgment</div>' +
-                    '<div style="border:2px solid #000;border-top:none;padding:10px;margin-bottom:18px;font-size:11px;">' +
-                    'I understand and agree to the Iron Age alcohol service policies including: not serving persons under 21, checking valid ID, not serving visibly intoxicated persons, and not allowing customers to leave with open beverages. Failure to comply may result in termination.</div>' +
-                    // ── Section 5: Arbitration ──
-                    '<div style="background:#000;color:#fff;font-weight:bold;padding:6px 10px;font-size:13px;">Arbitration of Employment Disputes</div>' +
-                    '<div style="border:2px solid #000;border-top:none;padding:10px;margin-bottom:24px;font-size:11px;">' +
-                    'I acknowledge that all employment disputes shall be resolved through binding arbitration under AAA rules. I understand I am waiving my right to a jury trial. This is a condition of my employment with Iron Age Rego Park LLC.</div>' +
-                    // ── Signatures ──
-                    '<div style="display:flex;justify-content:space-between;margin-top:10px;">' +
-                    '<div style="border-bottom:1.5px solid #000;width:45%;position:relative;height:50px;display:flex;align-items:flex-end;padding-bottom:2px;font-size:12px;font-weight:bold;">Employee Signature:' + empSignHtml + '</div>' +
-                    '<div style="border-bottom:1.5px solid #000;width:30%;position:relative;height:50px;display:flex;align-items:flex-end;padding-bottom:2px;font-size:12px;font-weight:bold;">Date: <b>' + empDateHtml + '</b></div>' +
-                    '</div>' +
-                    '<div style="margin-top:16px;font-size:11px;color:#000;">Employee Name (Print): <b>' + (emp.name||'') + '</b> &nbsp;&nbsp; Position: <b>' + (emp.pos||'') + '</b> &nbsp;&nbsp; Hire Date: <b>' + (emp.hire||'') + '</b></div>' +
-                    '</div>';
+                var PB = 'page-break-after:always;'; // page break shorthand
+                var empSign  = d.empSign  ? '<img src="' + d.empSign  + '" style="position:absolute;bottom:4px;left:0;max-height:48px;max-width:180px;">' : '';
+                var empDate  = d.empSignDate || '';
+                // Allowances row builder
+                var allowRows = '';
+                if (d.allowNone) {
+                    allowRows = '<tr><td style="padding:4px 6px;border:1px solid #000;">&#10003; None</td><td style="padding:4px 6px;border:1px solid #000;"></td></tr>';
+                } else {
+                    if (d.allowTips)    allowRows += '<tr><td style="padding:4px 6px;border:1px solid #000;">&#10003; Tips</td><td style="padding:4px 6px;border:1px solid #000;">$' + (d.allowTipsAmt||'') + ' per hour</td></tr>';
+                    if (d.allowMeals)   allowRows += '<tr><td style="padding:4px 6px;border:1px solid #000;">&#10003; Meals</td><td style="padding:4px 6px;border:1px solid #000;">$' + (d.allowMealsAmt||'') + ' per meal</td></tr>';
+                    if (d.allowLodging) allowRows += '<tr><td style="padding:4px 6px;border:1px solid #000;">&#10003; Lodging</td><td style="padding:4px 6px;border:1px solid #000;">' + (d.allowLodgingAmt||'') + '</td></tr>';
+                    if (d.allowOther)   allowRows += '<tr><td style="padding:4px 6px;border:1px solid #000;">&#10003; Other</td><td style="padding:4px 6px;border:1px solid #000;">' + (d.allowOtherAmt||'') + '</td></tr>';
+                    if (!allowRows) allowRows = '<tr><td colspan="2" style="padding:4px 6px;border:1px solid #000;">None</td></tr>';
+                }
+                var payFreqDisplay = d.payfreq === 'Other' ? (d.payfreqOther || 'Other') : (d.payfreq || 'Weekly');
+                var langLine = d.langChoice === 'english'
+                    ? '&#10003; I have been given this pay notice in English because it is my primary language.'
+                    : 'My primary language is: <u>' + (d.langOther||'') + '</u>. I have been given this pay notice in English only.';
+
+                html =
+                // ════════════════════════════════════════
+                // PAGE 1: New Employee Checklist
+                // ════════════════════════════════════════
+                '<div style="' + PB + 'font-family:Arial,sans-serif;color:#000;font-size:13px;padding:0.5in;min-height:10in;">' +
+                '<div style="text-align:center;margin-bottom:30px;">' +
+                '<div style="font-size:36px;font-weight:900;font-family:Georgia,serif;letter-spacing:-2px;">Iron Age</div>' +
+                '<div style="font-size:22px;font-weight:bold;margin-top:16px;">New Employee Check List</div></div>' +
+                '<table style="width:100%;border-collapse:collapse;margin-bottom:20px;">' +
+                '<tr><td style="padding:6px 0;font-size:14px;">Employee Name:&nbsp;&nbsp;<u>&nbsp;&nbsp;&nbsp;' + (emp.name||'') + '&nbsp;&nbsp;&nbsp;</u></td></tr>' +
+                '<tr><td style="padding:6px 0;font-size:14px;">Prepare by:&nbsp;&nbsp;<u>&nbsp;&nbsp;&nbsp;' + (d.preparer||'') + '&nbsp;&nbsp;&nbsp;</u></td></tr>' +
+                '<tr><td style="padding:6px 0;font-size:14px;">Date:&nbsp;&nbsp;<u>&nbsp;&nbsp;&nbsp;' + d.date + '&nbsp;&nbsp;&nbsp;</u></td></tr></table>' +
+                '<div style="margin-top:20px;line-height:2.2;font-size:14px;">' +
+                '<div>' + chk(d.chkW4) + ' W4</div>' +
+                '<div>' + chk(d.chkId) + ' Copy of ID and SSN Card</div>' +
+                '<div>' + chk(d.chkLs54) + ' LS 54 Form</div>' +
+                '<div>' + chk(d.chkDd) + ' Direct Deposit Form</div>' +
+                '<div>' + chk(d.chkAlc) + ' Alcohol Acknowledgment Form</div>' +
+                '<div>' + chk(d.chkHarass) + ' Proof of Sexual Harassment Prevention Training</div>' +
+                '<div>' + chk(d.chkArb) + ' Arbitration of Employment Disputes</div>' +
+                '</div></div>' +
+
+                // ════════════════════════════════════════
+                // PAGE 2: LS-54 Pay Rate Notice
+                // ════════════════════════════════════════
+                '<div style="' + PB + 'font-family:Arial,sans-serif;color:#000;font-size:11.5px;padding:0.4in;min-height:10in;">' +
+                '<div style="text-align:center;font-weight:bold;font-size:13px;margin-bottom:10px;">' +
+                'Notice and Acknowledgement of Pay Rate and Payday<br>' +
+                'Under Section 195.1 of the New York State Labor Law<br>' +
+                'Notice for Hourly Rate Employees</div>' +
+                '<table style="width:100%;border-collapse:collapse;border:1px solid #000;">' +
+                '<tr>' +
+                // Left column
+                '<td style="width:33%;border:1px solid #000;padding:8px;vertical-align:top;">' +
+                '<b>1. Employer Information</b><br><br>' +
+                'Name:<br>' + (d.bizName||'') + '<br><br>' +
+                'Doing Business As (DBA) Name(s):<br>' + (d.dba||'') + '<br><br>' +
+                'FEIN (optional):<br><u>' + (d.fein||'') + '</u><br><br>' +
+                'Physical Address:<br>' + (d.bizAddress||'') + '<br><br>' +
+                'Mailing Address:<br>' + (d.bizMail || d.bizAddress ||'') + '<br><br>' +
+                'Phone:<br>' + (d.bizPhone||'') +
+                '</td>' +
+                // Middle column
+                '<td style="width:33%;border:1px solid #000;padding:8px;vertical-align:top;">' +
+                '<b>3. Employee\'s rate of pay:</b><br><br>' +
+                '$<u>' + (d.wage||'') + '</u> per hour<br><br>' +
+                '<b>4. Allowances taken:</b><br>' +
+                '<table style="border-collapse:collapse;width:100%;margin-top:4px;">' + allowRows + '</table><br>' +
+                '<b>5. Regular payday:</b> <u>' + (d.payday||'Tuesday') + '</u><br><br>' +
+                '<b>6. Pay is:</b><br>' +
+                chk(d.payfreq==='Weekly') + ' Weekly<br>' +
+                chk(d.payfreq==='Bi-weekly') + ' Bi-weekly<br>' +
+                chk(d.payfreq==='Other') + ' Other: <u>' + (d.payfreqOther||'') + '</u><br><br>' +
+                '<b>7. Overtime Pay Rate:</b><br>$<u>' + (d.otWage||'') + '</u> per hour' +
+                '</td>' +
+                // Right column
+                '<td style="width:34%;border:1px solid #000;padding:8px;vertical-align:top;">' +
+                '<b>2. Notice given:</b><br>' +
+                chk(d.noticeGiven==='At hiring') + ' At hiring<br>' +
+                chk(d.noticeGiven==='Before a change in pay rate') + ' Before a change in pay rate(s), allowances claimed or payday<br><br>' +
+                '<b>8. Employee Acknowledgement:</b><br><br>' +
+                'On this day I have been notified of my pay rate, overtime rate (if eligible), allowances, and designated pay day on the date given below. I told my employer what my primary language is.<br><br>' +
+                '<b>Check one:</b><br>' + langLine + '<br><br>' +
+                '<div style="border-bottom:1px solid #000;margin-top:30px;margin-bottom:2px;"></div>' +
+                'Print Employee Name<br><br>' +
+                '<b>' + (emp.name||'') + '</b><br><br>' +
+                '<div style="position:relative;border-bottom:1px solid #000;height:44px;margin-bottom:2px;">' + empSign + '</div>' +
+                'Employee Signature<br><br>' +
+                '<u>' + empDate + '</u> / &nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>' +
+                'Date<br><br>' +
+                '<div style="border-bottom:1px solid #000;margin-top:10px;margin-bottom:2px;"></div>' +
+                (d.ls54Preparer||'') + '<br>Preparer\'s Name and Title' +
+                '</td>' +
+                '</tr></table>' +
+                '<p style="font-size:10px;margin-top:8px;font-weight:bold;">The employee must receive a signed copy of this form. The employer must keep the original for 6 years.</p>' +
+                '<p style="font-size:9px;margin-top:4px;">LS 54 (12/25)</p>' +
+                '</div>' +
+
+                // ════════════════════════════════════════
+                // PAGE 3: Direct Deposit
+                // ════════════════════════════════════════
+                '<div style="' + PB + 'font-family:Arial,sans-serif;color:#000;font-size:12px;padding:0.5in;min-height:10in;">' +
+                '<div style="text-align:center;font-weight:bold;font-size:16px;margin-bottom:24px;">DIRECT DEPOSIT REQUEST FORM</div>' +
+                '<p style="margin-bottom:20px;">Complete this form, then print it, sign it and take it to your employer\'s payroll department to request direct deposit of your paycheck.</p>' +
+                '<table style="width:100%;border-collapse:collapse;margin-bottom:16px;">' +
+                '<tr><td style="padding:8px 0;">Customer name: &nbsp;<u>&nbsp;&nbsp;&nbsp;' + (d.ddName||'') + '&nbsp;&nbsp;&nbsp;</u></td></tr>' +
+                '<tr><td style="padding:8px 0;">Address: &nbsp;<u>&nbsp;&nbsp;&nbsp;' + (d.ddAddress||'') + '&nbsp;&nbsp;&nbsp;</u></td></tr>' +
+                '<tr><td style="padding:8px 0;">City &nbsp; State &nbsp; ZIP code: &nbsp;<u>&nbsp;&nbsp;&nbsp;' + (d.ddCity||'') + '&nbsp;&nbsp;&nbsp;</u></td></tr>' +
+                '</table>' +
+                '<p style="margin-bottom:12px;">Please have my paycheck automatically deposited into the following account:</p>' +
+                '<table style="width:100%;border-collapse:collapse;">' +
+                '<tr><td style="padding:8px 0;">' + chk(d.acctType==='Checking') + ' Checking account number: &nbsp;<u>&nbsp;&nbsp;&nbsp;' + (d.acctType==='Checking' ? (d.account||'') : '') + '&nbsp;&nbsp;&nbsp;</u></td></tr>' +
+                '<tr><td style="padding:8px 0;">Or</td></tr>' +
+                '<tr><td style="padding:8px 0;">' + chk(d.acctType==='Savings') + ' Savings / MIA / Money market account number: &nbsp;<u>&nbsp;&nbsp;&nbsp;' + (d.acctType==='Savings' ? (d.account||'') : '') + '&nbsp;&nbsp;&nbsp;</u></td></tr>' +
+                '<tr><td style="padding:8px 0;">Your bank\'s routing number: &nbsp;<u>&nbsp;&nbsp;&nbsp;' + (d.routing||'') + '&nbsp;&nbsp;&nbsp;</u></td></tr>' +
+                '</table>' +
+                '<p style="margin:20px 0;">I authorize <u>&nbsp;&nbsp;&nbsp;' + (d.bizName||'') + '&nbsp;&nbsp;&nbsp;</u> (name of business) and my bank to automatically deposit my paycheck into my account listed above. This authorization will remain in effect until I give written notice to cancel it.</p>' +
+                '<table style="width:100%;border-collapse:collapse;margin-top:40px;">' +
+                '<tr>' +
+                '<td style="width:60%;vertical-align:bottom;">' +
+                '<div style="position:relative;border-bottom:1px solid #000;height:50px;">' + empSign + '</div>' +
+                'Customer signature' +
+                '</td>' +
+                '<td style="width:40%;vertical-align:bottom;padding-left:20px;">' +
+                '<div style="border-bottom:1px solid #000;height:50px;display:flex;align-items:flex-end;"><b>' + empDate + '</b></div>' +
+                'Date' +
+                '</td>' +
+                '</tr></table>' +
+                '</div>' +
+
+                // ════════════════════════════════════════
+                // PAGE 4: Alcohol Awareness Acknowledgment
+                // ════════════════════════════════════════
+                '<div style="' + PB + 'font-family:Arial,sans-serif;color:#000;font-size:12px;padding:0.5in;min-height:10in;">' +
+                '<div style="text-align:center;margin-bottom:20px;">' +
+                '<div style="font-size:28px;font-weight:900;font-family:Georgia,serif;letter-spacing:-1px;">Iron Age</div>' +
+                '<div style="font-size:15px;font-weight:bold;margin-top:12px;">Iron Age Korean Steakhouse Restaurant Alcohol Awareness Training<br>Program Employee Acknowledgment Form</div></div>' +
+                '<p style="margin-bottom:16px;">As part of the condition of my employment by the Iron Age Korean Steakhouse, I understand and agree to the following rules about the sale of alcoholic beverages:</p>' +
+                '<ol style="margin-left:20px;line-height:1.8;">' +
+                '<li>I will not sell alcoholic beverages to any person under 21 years old.<ul><li>If the person does not appear to be at least 40 years old, I will ask for identification and if there is any doubt about the person\'s age, I will not make the sale.</li></ul></li>' +
+                '<li>Only the following forms of I.D. are acceptable:<ul><li>Valid Driver\'s License</li><li>Valid State I.D. Card</li><li>Valid Passport</li></ul></li>' +
+                '<li>I will not knowingly sell alcoholic beverages to any adult for use by individuals under the age of 21. If I suspect that this is the purpose, I will not make the sale.</li>' +
+                '<li>I understand that it is a violation of state law to serve any person who is intoxicated or a known alcoholic.</li>' +
+                '<li>I will not allow customers to leave the premises with any alcoholic beverage. If I suspect that someone is intoxicated, I will alert management immediately.</li>' +
+                '<li>I will not come to work after drinking alcoholic beverages nor will I consume alcoholic beverages during working hours.</li>' +
+                '<li>I will not engage in the use, sale or trafficking of controlled substances on the premises and will immediately report such violation to management.</li>' +
+                '</ol>' +
+                '<p style="margin:20px 0;">By signing below, I represent that I understand that failure to comply with these policies may result disciplinary procedures, to include termination.</p>' +
+                '<table style="width:100%;border-collapse:collapse;margin-top:30px;">' +
+                '<tr>' +
+                '<td style="width:60%;padding:8px 0;">Employee Name &nbsp;<u>&nbsp;&nbsp;&nbsp;<b>' + (emp.name||'') + '</b>&nbsp;&nbsp;&nbsp;</u></td>' +
+                '<td style="width:40%;padding:8px 0;">Date &nbsp;<u>&nbsp;&nbsp;&nbsp;<b>' + d.date + '</b>&nbsp;&nbsp;&nbsp;</u></td>' +
+                '</tr>' +
+                '<tr><td colspan="2" style="padding-top:16px;">' +
+                '<div style="position:relative;border-bottom:1px solid #000;height:50px;width:60%;">' + empSign + '</div>' +
+                'Employee Signature' +
+                '</td></tr>' +
+                '</table></div>' +
+
+                // ════════════════════════════════════════
+                // PAGE 5 & 6: Arbitration Agreement (2 pages)
+                // ════════════════════════════════════════
+                '<div style="' + PB + 'font-family:Arial,sans-serif;color:#000;font-size:11.5px;padding:0.5in;min-height:10in;line-height:1.6;">' +
+                '<p style="font-size:10px;font-weight:bold;text-align:center;margin-bottom:10px;">IMPORTANT — ALL EMPLOYEES ARE DIRECTED TO READ THIS POLICY VERY CAREFULLY BECAUSE IT AFFECTS THEIR LEGAL RIGHTS AS EMPLOYEES OF Iron Age Rego Park LLC., HEREIN CALLED THE EMPLOYER.</p>' +
+                '<div style="text-align:center;font-weight:bold;font-size:14px;margin-bottom:14px;">ARBITRATION OF EMPLOYMENT DISPUTES</div>' +
+                '<p style="margin-bottom:10px;">Any and all alleged legal disputes, claims injuries and/or other alleged wrongdoings of any kind arising out of or relating to, either directly or indirectly, the entire course of my employment relationship with the Employer, the termination of that relationship, and any and all subsequent events relating to such employment and termination, shall be submitted exclusively to final and binding arbitration under the rules and regulations of the American Arbitration Association (AAA) for the resolution of employment disputes, as the only means for resolving any and all such disputes between me and the Employer.</p>' +
+                '<p style="margin-bottom:10px;">Such arbitration shall include, but is not limited to, claims that the Employer violated the Fair Labor Standards Act and the New York State Labor laws regarding payment of minimum wages, overtime compensation and spread of hours payment, and other federal, state, or local laws and/or common law (i.e., court decisions) which prohibit discrimination, harassment or other wrongful practices in employment based on age, color, race, disability or handicap, national origin, religion or creed, ancestry, sex, pregnancy, veteran, family and marital status, sexual orientation, and any other forms of discrimination or harassment prohibited by federal, state, and local anti-discrimination in employment laws, and also any claims of wrongful or retaliatory discharge, reporting (whistleblowing) on alleged wrongful activities by the Employer, its employees or anyone else and/or any other wrongful termination of employment, or other wrongful employment practices, action or activities, and any alleged violation of any contract or other promise, guarantee, commitment or obligation allegedly made by the Employer to me.</p>' +
+                '<p style="margin-bottom:10px;">I acknowledge my understanding that under this provision for arbitration of any employment disputes I am giving up my right to pursue any such disputes through a lawsuit in a court of law and, specifically, I am giving up my right to have any such disputes decided by a jury. I understand that I cannot bring a lawsuit over any such employment disputes but instead can only pursue them through this arbitration procedure.</p>' +
+                '<p style="margin-bottom:10px;">In this arbitration procedure I shall have the same remedies available to me as are provided by federal and state laws and common law (i.e., court decisions) which prohibit all wrongful practices in employment, including but not limited to, back and front pay and payment for lost fringe benefits, compensatory damages, damages for personal, physical and emotional injuries, including for pain, suffering and emotional distress, attorney\'s fees and costs, punitive damages and injunctive relief, where appropriate. An arbitrator can issue an order that the Employer take some action or refrain from taking some action relating to my employment or termination and any subsequent events.</p>' +
+                '<p style="margin-bottom:10px;">The arbitrator, as appointed by AAA, shall schedule the times, dates and locations of the arbitration hearings, shall provide each party with a reasonable opportunity for prehearing discovery of information relevant to the claims and defenses raised in the arbitration and shall otherwise insure fairness and due process in the arbitration process and hearings, all in accordance with the AAA\'s rules and regulations for the arbitration of employment disputes.</p>' +
+                '</div>' +
+                '<div style="font-family:Arial,sans-serif;color:#000;font-size:11.5px;padding:0.5in;min-height:10in;line-height:1.6;">' +
+                '<p style="margin-bottom:10px;">For issues involving prehearing discovery, procedures before and during the hearing, and admissibility of evidence and other evidentiary matters which are not addressed by these rules and regulations, the arbitrator shall be guided, but not controlled, by the Federal Rules of Civil Procedure and the Federal Rules of Evidence. In seeking such guidance from these Rules the arbitrator shall balance the needs of fairness and due process against the purposes of arbitration to provide a quicker, less costly and less cumbersome process than the courts for the resolution of employment disputes.</p>' +
+                '<p style="margin-bottom:10px;">I also understand that if I want to bring any claim relating to my employment against the Employer under this arbitration procedure, I must deliver a written demand for arbitration to the Employer at its corporate headquarters.</p>' +
+                '<p style="margin-bottom:10px;">I and the Employer are entitled to be represented by attorneys in this arbitration process and the cost of the arbitration will be shared in accordance with the rules by the American Arbitration Association.</p>' +
+                '<p style="margin-bottom:10px;">I specifically acknowledge my complete understanding and agreement that the Employer has the absolute right to proceed in court to obtain an order from a judge directing that I must use this arbitration procedure as the only legal method for resolving any and all disputes between me and the Employer concerning my employment.</p>' +
+                '<p style="margin-bottom:10px;">I acknowledge my understanding that this provision for arbitration of any and all employment disputes is a condition of the Employer\'s offer of employment or continued employment with the Employer, and my agreement to this provision is in consideration (i.e. in exchange or return) for such offer of employment or continued employment by the Employer.</p>' +
+                '<table style="width:100%;border-collapse:collapse;margin-top:30px;">' +
+                '<tr>' +
+                '<td style="width:50%;padding:8px 0;vertical-align:bottom;">' +
+                '<div style="border-bottom:1px solid #000;height:50px;position:relative;">' + empSign + '</div>' +
+                'Employee\'s Name (Print) / Signature of Employee<br><br><b>' + (emp.name||'') + '</b>' +
+                '</td>' +
+                '<td style="width:50%;padding:8px 0 8px 20px;vertical-align:bottom;">' +
+                '<div style="border-bottom:1px solid #000;height:50px;display:flex;align-items:flex-end;"><b>' + d.date + '</b></div>' +
+                'Date' +
+                '</td>' +
+                '</tr>' +
+                '</table></div>';
 
             } else if (doc.type === 'DEPOSIT') {
                 // ── Equipment Deposit print layout ──
