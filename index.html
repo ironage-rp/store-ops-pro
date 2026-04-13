@@ -281,6 +281,8 @@
                         <button onclick="switchTemplate('NOCALL')" id="tab-NOCALL" class="tab-btn text-textMuted pb-2 font-bold text-sm shrink-0">No Call No Show</button>
                         <button onclick="switchTemplate('TIMEOFF')" id="tab-TIMEOFF" class="tab-btn text-textMuted pb-2 font-bold text-sm shrink-0">Time Off</button>
                         <button onclick="switchTemplate('VERIFICATION')" id="tab-VERIFICATION" class="tab-btn text-textMuted pb-2 font-bold text-sm shrink-0">Verification</button>
+                        <button onclick="switchTemplate('NEWHIRE')" id="tab-NEWHIRE" class="tab-btn text-textMuted pb-2 font-bold text-sm shrink-0">New Hire Packet</button>
+                        <button onclick="switchTemplate('DEPOSIT')" id="tab-DEPOSIT" class="tab-btn text-textMuted pb-2 font-bold text-sm shrink-0">Equipment Deposit</button>
                     </div>
                     <div id="tpl-list-container" class="space-y-4">
                         <div class="flex justify-between items-center">
@@ -358,6 +360,78 @@
                                     <input type="email" id="ev-mgr-email" required placeholder="Manager Email" class="bg-surface border border-white/10 rounded p-3 text-white">
                                 </div>
                                 <button type="submit" class="w-full bg-primary py-3 rounded-lg font-bold">Save Letter</button>
+                            </form>
+                            <!-- NEW HIRE PACKET FORM -->
+                            <form id="form-NEWHIRE" class="hidden tpl-form space-y-6" onsubmit="saveDocNewHire(event)">
+                                <p class="text-xs text-textMuted">Checklist, LS-54, Alcohol Acknowledgment, Arbitration Agreement, Direct Deposit — all in one packet.</p>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div><label class="block text-xs text-textMuted mb-1">Today's Date *</label><input type="date" id="nh-date" required class="w-full bg-surface border border-white/10 rounded p-3 text-white [color-scheme:dark]"></div>
+                                    <div><label class="block text-xs text-textMuted mb-1">Prepared By *</label><input type="text" id="nh-preparer" required placeholder="Manager Name" class="w-full bg-surface border border-white/10 rounded p-3 text-white"></div>
+                                </div>
+                                <div class="border border-white/10 rounded-lg p-4 space-y-3">
+                                    <h4 class="text-sm font-bold text-primary">Checklist Items</h4>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                                        <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="nh-chk-w4" class="accent-primary w-4 h-4"> W-4</label>
+                                        <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="nh-chk-id" class="accent-primary w-4 h-4"> Copy of ID and SSN Card</label>
+                                        <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="nh-chk-ls54" class="accent-primary w-4 h-4"> LS 54 Form</label>
+                                        <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="nh-chk-dd" class="accent-primary w-4 h-4"> Direct Deposit Form</label>
+                                        <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="nh-chk-alc" class="accent-primary w-4 h-4"> Alcohol Acknowledgment Form</label>
+                                        <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="nh-chk-harass" class="accent-primary w-4 h-4"> Sexual Harassment Prevention Training</label>
+                                        <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="nh-chk-arb" class="accent-primary w-4 h-4"> Arbitration of Employment Disputes</label>
+                                    </div>
+                                </div>
+                                <div class="border border-white/10 rounded-lg p-4 space-y-3">
+                                    <h4 class="text-sm font-bold text-primary">LS-54 — Pay Rate Notice</h4>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div><label class="block text-xs text-textMuted mb-1">Pay Rate ($/hr) *</label><input type="text" id="nh-wage" required placeholder="e.g. 16.50" class="w-full bg-surface border border-white/10 rounded p-3 text-white"></div>
+                                        <div><label class="block text-xs text-textMuted mb-1">Overtime Rate ($/hr)</label><input type="text" id="nh-ot-wage" placeholder="auto 1.5x" class="w-full bg-surface border border-white/10 rounded p-3 text-white"></div>
+                                        <div><label class="block text-xs text-textMuted mb-1">Regular Payday</label><input type="text" id="nh-payday" value="Tuesday" class="w-full bg-surface border border-white/10 rounded p-3 text-white"></div>
+                                        <div><label class="block text-xs text-textMuted mb-1">Pay Frequency</label><select id="nh-payfreq" class="w-full bg-surface border border-white/10 rounded p-3 text-white"><option>Weekly</option><option>Bi-weekly</option><option>Other</option></select></div>
+                                    </div>
+                                </div>
+                                <div class="border border-white/10 rounded-lg p-4 space-y-3">
+                                    <h4 class="text-sm font-bold text-primary">Direct Deposit</h4>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div><label class="block text-xs text-textMuted mb-1">Bank Routing Number</label><input type="text" id="nh-routing" placeholder="9-digit routing number" class="w-full bg-surface border border-white/10 rounded p-3 text-white"></div>
+                                        <div><label class="block text-xs text-textMuted mb-1">Account Number</label><input type="text" id="nh-account" placeholder="Account number" class="w-full bg-surface border border-white/10 rounded p-3 text-white"></div>
+                                        <div><label class="block text-xs text-textMuted mb-1">Account Type</label><select id="nh-acct-type" class="w-full bg-surface border border-white/10 rounded p-3 text-white"><option>Checking</option><option>Savings</option></select></div>
+                                    </div>
+                                </div>
+                                <button type="submit" class="w-full bg-primary py-3 rounded-lg font-bold">Save New Hire Packet</button>
+                            </form>
+
+                            <!-- EQUIPMENT DEPOSIT FORM -->
+                            <form id="form-DEPOSIT" class="hidden tpl-form space-y-4" onsubmit="saveDocDeposit(event)">
+                                <p class="text-xs text-textMuted">Track equipment issued to employee. Add items at hire, mark returned at departure.</p>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div><label class="block text-xs text-textMuted mb-1">Date *</label><input type="date" id="dep-date" required class="w-full bg-surface border border-white/10 rounded p-3 text-white [color-scheme:dark]"></div>
+                                </div>
+                                <div class="border border-white/10 rounded-lg p-4 space-y-3">
+                                    <h4 class="text-sm font-bold text-primary">Equipment Items</h4>
+                                    <div class="grid grid-cols-12 gap-2 text-xs font-bold text-textMuted px-1">
+                                        <div class="col-span-4">Item</div>
+                                        <div class="col-span-3">Deposit ($)</div>
+                                        <div class="col-span-3">Qty</div>
+                                        <div class="col-span-2"></div>
+                                    </div>
+                                    <div id="deposit-item-list" class="space-y-2"></div>
+                                    <button type="button" onclick="addDepositRow()" class="text-primary font-bold flex items-center gap-1 text-xs mt-2"><span class="material-symbols-outlined text-[18px]">add_circle</span> Add Item</button>
+                                    <div class="flex justify-between items-center pt-2 border-t border-white/10">
+                                        <span class="text-sm font-bold text-textMuted">Total Deposit:</span>
+                                        <span id="dep-total" class="text-lg font-black text-primary">$0</span>
+                                    </div>
+                                </div>
+                                <div class="border border-white/10 rounded-lg p-4 space-y-2">
+                                    <h4 class="text-sm font-bold text-primary">Return Status</h4>
+                                    <div class="flex items-center gap-3">
+                                        <label class="flex items-center gap-2 cursor-pointer text-sm"><input type="checkbox" id="dep-returned" onchange="toggleReturnDate()" class="accent-primary w-4 h-4"> Equipment Returned</label>
+                                    </div>
+                                    <div id="dep-return-date-wrap" class="hidden">
+                                        <label class="block text-xs text-textMuted mb-1">Return Date</label>
+                                        <input type="date" id="dep-return-date" class="w-full bg-surface border border-white/10 rounded p-3 text-white [color-scheme:dark]">
+                                    </div>
+                                </div>
+                                <button type="submit" class="w-full bg-primary py-3 rounded-lg font-bold">Save Deposit Record</button>
                             </form>
                         </div>
                     </div>
@@ -930,7 +1004,7 @@
         // --- Template Management ---
         function switchTemplate(type) {
             currentTplType = type;
-            ['CORRECTIVE', 'NOCALL', 'TIMEOFF', 'VERIFICATION'].forEach(function(t) {
+            ['CORRECTIVE', 'NOCALL', 'TIMEOFF', 'VERIFICATION', 'NEWHIRE', 'DEPOSIT'].forEach(function(t) {
                 document.getElementById('tab-' + t).className = t === type
                     ? "tab-btn active pb-2 font-bold text-sm shrink-0"
                     : "tab-btn text-textMuted hover:text-white pb-2 font-bold text-sm shrink-0";
@@ -951,6 +1025,11 @@
                 if (doc.type === 'NOCALL') summary = 'Violation: ' + doc.data.viodate;
                 if (doc.type === 'TIMEOFF') summary = doc.data.start + ' ~ ' + doc.data.end + ' (' + (doc.data.approve || 'PENDING') + ')';
                 if (doc.type === 'VERIFICATION') summary = (doc.data.status || '') + ' — ' + (doc.data.start || '');
+                if (doc.type === 'NEWHIRE') summary = 'Preparer: ' + (doc.data.preparer || '') + ' | $' + (doc.data.wage || '?') + '/hr';
+                if (doc.type === 'DEPOSIT') {
+                    var retStatus = doc.data.returned ? 'Returned ' + (doc.data.returnDate || '') : 'Active';
+                    summary = 'Total: $' + (doc.data.total || '0') + ' | ' + retStatus;
+                }
                 return '<div class="grid grid-cols-12 px-6 py-4 items-center hover:bg-surface border-b border-white/5 transition-colors min-w-[700px]"><div class="col-span-2 text-textMuted text-xs">' + new Date(doc.createdAt).toLocaleDateString() + '</div><div class="col-span-3 font-bold truncate pr-2">' + empName + '</div><div class="col-span-5 text-xs text-textMuted truncate pr-2">' + summary + '</div><div class="col-span-2 text-right flex justify-end gap-2"><button onclick="editTemplate(\'' + doc.id + '\')" class="text-primary material-symbols-outlined text-[20px]">edit</button><button onclick="openPreview(\'' + doc.id + '\')" class="text-blue-400 material-symbols-outlined text-[20px]">visibility</button><button onclick="deleteDoc(\'' + doc.id + '\')" class="text-white/20 material-symbols-outlined text-[20px]">delete</button></div></div>';
             }).join('') || '<p class="p-8 text-center text-textMuted">No documents found.</p>';
         }
@@ -978,6 +1057,14 @@
                 document.getElementById('nc-date').value = today;
                 document.getElementById('to-date').value = today;
                 document.getElementById('ev-date').value = today;
+                document.getElementById('nh-date').value = today;
+                document.getElementById('dep-date').value = today;
+                // Reset deposit items
+                document.getElementById('deposit-item-list').innerHTML = '';
+                addDepositRow('S-Shirt', 20, 1);
+                addDepositRow('Earpiece', 30, 1);
+                addDepositRow('Name Tag', 10, 1);
+                calcDepositTotal();
             } else {
                 document.getElementById('tpl-form-title').textContent = "Edit Document";
             }
@@ -991,12 +1078,18 @@
             autoFillHireDate();
         }
 
-        // AUTO-FILL: When employee selection changes, update hire date fields
+        // AUTO-FILL: When employee selection changes, update hire date / wage fields
         function autoFillHireDate() {
             var empId = document.getElementById('common-emp-select').value;
             var emp = db.employees.find(function(e) { return e.id === empId; });
-            if (emp && emp.hire) {
-                document.getElementById('ev-start').value = emp.hire;
+            if (!emp) return;
+            if (emp.hire) document.getElementById('ev-start').value = emp.hire;
+            // Auto-fill wage into New Hire Packet LS-54
+            if (emp.wage && document.getElementById('nh-wage')) {
+                document.getElementById('nh-wage').value = emp.wage;
+                // Auto-calc OT rate (1.5x)
+                var rate = parseFloat(emp.wage);
+                if (!isNaN(rate)) document.getElementById('nh-ot-wage').value = (rate * 1.5).toFixed(2);
             }
         }
 
@@ -1050,6 +1143,31 @@
                 document.getElementById('ev-mgr-title').value = d.mgrTitle;
                 document.getElementById('ev-mgr-phone').value = d.mgrPhone;
                 document.getElementById('ev-mgr-email').value = d.mgrEmail;
+            } else if (doc.type === 'NEWHIRE') {
+                document.getElementById('nh-date').value = d.date;
+                document.getElementById('nh-preparer').value = d.preparer || '';
+                document.getElementById('nh-chk-w4').checked = d.chkW4 || false;
+                document.getElementById('nh-chk-id').checked = d.chkId || false;
+                document.getElementById('nh-chk-ls54').checked = d.chkLs54 || false;
+                document.getElementById('nh-chk-dd').checked = d.chkDd || false;
+                document.getElementById('nh-chk-alc').checked = d.chkAlc || false;
+                document.getElementById('nh-chk-harass').checked = d.chkHarass || false;
+                document.getElementById('nh-chk-arb').checked = d.chkArb || false;
+                document.getElementById('nh-wage').value = d.wage || '';
+                document.getElementById('nh-ot-wage').value = d.otWage || '';
+                document.getElementById('nh-payday').value = d.payday || 'Tuesday';
+                document.getElementById('nh-payfreq').value = d.payfreq || 'Weekly';
+                document.getElementById('nh-routing').value = d.routing || '';
+                document.getElementById('nh-account').value = d.account || '';
+                document.getElementById('nh-acct-type').value = d.acctType || 'Checking';
+            } else if (doc.type === 'DEPOSIT') {
+                document.getElementById('dep-date').value = d.date;
+                document.getElementById('deposit-item-list').innerHTML = '';
+                (d.items || []).forEach(function(i) { addDepositRow(i.item, i.deposit, i.qty); });
+                calcDepositTotal();
+                document.getElementById('dep-returned').checked = d.returned || false;
+                toggleReturnDate();
+                if (d.returnDate) document.getElementById('dep-return-date').value = d.returnDate;
             }
         }
 
@@ -1236,7 +1354,7 @@
                     supa.from('staff_files').select('*')
                 ]);
                 var backupData = {
-                    version: "4.9.7",
+                    version: "4.9.8",
                     settings:    results[3].data ? results[3].data.data : db.settings,
                     employees:   (results[0].data || []).map(function(r) { return r.data; }),
                     docs:        results[1].data || [],
@@ -1333,6 +1451,99 @@
             reader.readAsText(file);
         }
 
+        /* ── Deposit helpers ── */
+        function addDepositRow(item, deposit, qty) {
+            item = item || ''; deposit = deposit || ''; qty = qty || 1;
+            var list = document.getElementById('deposit-item-list');
+            var div = document.createElement('div');
+            div.className = 'grid grid-cols-12 gap-2 items-center';
+            div.innerHTML = '<input type="text" placeholder="Item name" value="' + item + '" onchange="calcDepositTotal()" class="col-span-4 bg-surface border border-white/10 rounded p-2 text-white text-xs">' +
+                '<input type="number" placeholder="$" value="' + deposit + '" onchange="calcDepositTotal()" class="col-span-3 bg-surface border border-white/10 rounded p-2 text-white text-xs">' +
+                '<input type="number" placeholder="Qty" value="' + qty + '" min="1" onchange="calcDepositTotal()" class="col-span-3 bg-surface border border-white/10 rounded p-2 text-white text-xs">' +
+                '<button type="button" onclick="this.parentElement.remove(); calcDepositTotal();" class="col-span-2 text-danger flex justify-center"><span class="material-symbols-outlined text-[18px]">delete</span></button>';
+            list.appendChild(div);
+        }
+
+        function calcDepositTotal() {
+            var total = 0;
+            document.querySelectorAll('#deposit-item-list > div').forEach(function(row) {
+                var inputs = row.querySelectorAll('input');
+                var amt = parseFloat(inputs[1].value) || 0;
+                var qty = parseFloat(inputs[2].value) || 1;
+                total += amt * qty;
+            });
+            document.getElementById('dep-total').textContent = '$' + total.toFixed(2);
+        }
+
+        function toggleReturnDate() {
+            var checked = document.getElementById('dep-returned').checked;
+            document.getElementById('dep-return-date-wrap').classList.toggle('hidden', !checked);
+            if (checked) {
+                var today = new Date().toISOString().split('T')[0];
+                document.getElementById('dep-return-date').value = today;
+            }
+        }
+
+        function getDepositItems() {
+            var items = [];
+            document.querySelectorAll('#deposit-item-list > div').forEach(function(row) {
+                var inputs = row.querySelectorAll('input');
+                if (inputs[0].value) {
+                    items.push({ item: inputs[0].value, deposit: parseFloat(inputs[1].value) || 0, qty: parseInt(inputs[2].value) || 1 });
+                }
+            });
+            return items;
+        }
+
+        /* ── Save: New Hire Packet ── */
+        function saveDocNewHire(e) {
+            e.preventDefault();
+            upsertDoc({
+                id: editingDocId || 'doc_' + Date.now(),
+                type: 'NEWHIRE',
+                empId: document.getElementById('common-emp-select').value,
+                createdAt: editingDocId ? db.docs.find(function(d) { return d.id === editingDocId; }).createdAt : Date.now(),
+                data: {
+                    date:      document.getElementById('nh-date').value,
+                    preparer:  document.getElementById('nh-preparer').value,
+                    chkW4:     document.getElementById('nh-chk-w4').checked,
+                    chkId:     document.getElementById('nh-chk-id').checked,
+                    chkLs54:   document.getElementById('nh-chk-ls54').checked,
+                    chkDd:     document.getElementById('nh-chk-dd').checked,
+                    chkAlc:    document.getElementById('nh-chk-alc').checked,
+                    chkHarass: document.getElementById('nh-chk-harass').checked,
+                    chkArb:    document.getElementById('nh-chk-arb').checked,
+                    wage:      document.getElementById('nh-wage').value,
+                    otWage:    document.getElementById('nh-ot-wage').value,
+                    payday:    document.getElementById('nh-payday').value,
+                    payfreq:   document.getElementById('nh-payfreq').value,
+                    routing:   document.getElementById('nh-routing').value,
+                    account:   document.getElementById('nh-account').value,
+                    acctType:  document.getElementById('nh-acct-type').value
+                }
+            });
+        }
+
+        /* ── Save: Equipment Deposit ── */
+        function saveDocDeposit(e) {
+            e.preventDefault();
+            var items = getDepositItems();
+            var total = items.reduce(function(sum, i) { return sum + i.deposit * i.qty; }, 0);
+            upsertDoc({
+                id: editingDocId || 'doc_' + Date.now(),
+                type: 'DEPOSIT',
+                empId: document.getElementById('common-emp-select').value,
+                createdAt: editingDocId ? db.docs.find(function(d) { return d.id === editingDocId; }).createdAt : Date.now(),
+                data: {
+                    date:       document.getElementById('dep-date').value,
+                    items:      items,
+                    total:      total.toFixed(2),
+                    returned:   document.getElementById('dep-returned').checked,
+                    returnDate: document.getElementById('dep-return-date').value
+                }
+            });
+        }
+
         /* --------------------------------------------------------
            Preview & Print
         -------------------------------------------------------- */
@@ -1372,6 +1583,100 @@
                     ? '<b>' + (emp.name || '') + '</b> has been working as a <b>' + (emp.pos || '') + '</b> at <b>' + store + '</b> since <b>' + d.start + '</b> and is currently employed.'
                     : '<b>' + (emp.name || '') + '</b> was employed at <b>' + store + '</b> from <b>' + d.start + '</b> to <b>' + d.end + '</b>.<br><br>During this period, he/she held the position of <b>' + (emp.pos || '') + '</b>.';
                 html = '<div style="font-family:\'Inter\', Arial, sans-serif; font-size:15px; line-height:1.8; padding:0.5in; color:#000; max-width:800px; margin:0 auto; text-align:justify; background:#fff;"><div style="margin-bottom:40px; font-size:16px;">' + formattedDate + '</div><div style="margin-bottom:30px; font-size:16px;">To Whom It May Concern,</div><div style="font-weight:bold; font-size:18px; margin-bottom:30px; border-bottom:2px solid #000; padding-bottom:5px;">RE: Employment Verification for ' + (emp.name || '') + '</div><p style="margin-bottom:20px;">Please accept this letter as confirmation of the employment history of <b>' + (emp.name || '') + '</b> with <b>' + store + '</b>.</p><p style="margin-bottom:20px;">' + employmentDetail + '</p><p style="margin-bottom:20px;"><b>' + (emp.name || '') + '</b> reported directly to <b>' + d.mgrName + '</b>, who holds the title of <b>' + d.mgrTitle + '</b>. We provide this verification at the request of <b>' + (emp.name || '') + '</b>.</p><p style="margin-bottom:50px;">Should you require any further information, please do not hesitate to contact me.</p><div style="margin-bottom:10px; font-size:16px;">Sincerely,</div><div style="height:70px; margin-bottom:10px; position:relative;">' + (d.mgrSign ? '<img src="' + d.mgrSign + '" style="max-height:100%; max-width:250px; position:absolute; bottom:0; left:0; filter:contrast(1.2);">' : '') + '</div><div style="font-weight:bold; font-size:16px;">' + d.mgrName + '</div><div style="color:#222;">' + d.mgrTitle + '</div><div style="color:#222; margin-bottom:15px;">' + store + '</div><div style="color:#444; font-size:14px; border-top:1px solid #ccc; padding-top:10px; width:250px;">' + d.mgrPhone + '<br>' + d.mgrEmail + '</div></div>';
+            } else if (doc.type === 'NEWHIRE') {
+                // ── New Hire Packet print layout ──
+                var chk = function(v) { return v ? '&#9745;' : '&#9744;'; };
+                var empSignHtml = d.empSign ? '<img src="' + d.empSign + '" style="position:absolute;bottom:2px;left:0;max-height:50px;max-width:200px;">' : '';
+                html = '<div style="font-family:Arial,sans-serif;color:#000;font-size:13px;line-height:1.6;">' +
+                    // ── Section 1: Checklist ──
+                    '<div style="text-align:center;margin-bottom:18px;">' +
+                    '<div style="font-size:26px;font-weight:900;letter-spacing:-1px;font-family:Georgia,serif;">IRON AGE</div>' +
+                    '<div style="font-size:16px;font-weight:bold;margin-top:4px;border-bottom:3px double #000;padding-bottom:8px;">New Employee Check List</div></div>' +
+                    '<table style="width:100%;border-collapse:collapse;margin-bottom:16px;border:2px solid #000;">' +
+                    '<tr><td style="border:1px solid #000;padding:8px;width:50%;">Employee Name: <br><br><b>' + (emp.name||'') + '</b></td>' +
+                    '<td style="border:1px solid #000;padding:8px;">Prepared By: <br><br><b>' + (d.preparer||'') + '</b></td></tr>' +
+                    '<tr><td colspan="2" style="border:1px solid #000;padding:8px;">Date: <b>' + d.date + '</b></td></tr></table>' +
+                    '<div style="background:#000;color:#fff;font-weight:bold;padding:6px 10px;font-size:13px;">Document Checklist</div>' +
+                    '<div style="border:2px solid #000;border-top:none;padding:12px;margin-bottom:18px;">' +
+                    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">' +
+                    '<div>' + chk(d.chkW4) + ' W-4</div>' +
+                    '<div>' + chk(d.chkId) + ' Copy of ID and SSN Card</div>' +
+                    '<div>' + chk(d.chkLs54) + ' LS 54 Form</div>' +
+                    '<div>' + chk(d.chkDd) + ' Direct Deposit Form</div>' +
+                    '<div>' + chk(d.chkAlc) + ' Alcohol Acknowledgment Form</div>' +
+                    '<div>' + chk(d.chkHarass) + ' Sexual Harassment Prevention Training</div>' +
+                    '<div>' + chk(d.chkArb) + ' Arbitration of Employment Disputes</div>' +
+                    '</div></div>' +
+                    // ── Section 2: LS-54 Pay Rate ──
+                    '<div style="background:#000;color:#fff;font-weight:bold;padding:6px 10px;font-size:13px;">Notice of Pay Rate & Payday — LS 54 (NY Labor Law §195.1)</div>' +
+                    '<table style="width:100%;border-collapse:collapse;border:2px solid #000;border-top:none;margin-bottom:18px;font-size:12px;">' +
+                    '<tr><td style="border:1px solid #000;padding:8px;width:50%;vertical-align:top;">' +
+                    '<b>Employer:</b> Iron Age Rego Park LLC<br><b>DBA:</b> Iron Age<br><b>FEIN:</b> 88-0740180<br><b>Address:</b> 6135 Junction Blvd, Rego Park NY 11374<br><b>Phone:</b> (347) 612-4671</td>' +
+                    '<td style="border:1px solid #000;padding:8px;vertical-align:top;">' +
+                    '<b>Employee Rate:</b> $' + (d.wage||'') + '/hr<br>' +
+                    '<b>Overtime Rate:</b> $' + (d.otWage||'') + '/hr<br>' +
+                    '<b>Regular Payday:</b> ' + (d.payday||'Tuesday') + '<br>' +
+                    '<b>Pay Frequency:</b> ' + (d.payfreq||'Weekly') + '<br>' +
+                    '<b>Notice Given:</b> At Hiring</td></tr></table>' +
+                    // ── Section 3: Direct Deposit ──
+                    '<div style="background:#000;color:#fff;font-weight:bold;padding:6px 10px;font-size:13px;">Direct Deposit Authorization</div>' +
+                    '<table style="width:100%;border-collapse:collapse;border:2px solid #000;border-top:none;margin-bottom:18px;font-size:12px;">' +
+                    '<tr><td style="border:1px solid #000;padding:8px;width:33%;">Account Type:<br><br><b>' + (d.acctType||'') + '</b></td>' +
+                    '<td style="border:1px solid #000;padding:8px;width:33%;">Routing Number:<br><br><b>' + (d.routing||'') + '</b></td>' +
+                    '<td style="border:1px solid #000;padding:8px;">Account Number:<br><br><b>' + (d.account||'') + '</b></td></tr></table>' +
+                    // ── Section 4: Alcohol Ack ──
+                    '<div style="background:#000;color:#fff;font-weight:bold;padding:6px 10px;font-size:13px;">Alcohol Awareness Acknowledgment</div>' +
+                    '<div style="border:2px solid #000;border-top:none;padding:10px;margin-bottom:18px;font-size:11px;">' +
+                    'I understand and agree to the Iron Age alcohol service policies including: not serving persons under 21, checking valid ID, not serving visibly intoxicated persons, and not allowing customers to leave with open beverages. Failure to comply may result in termination.</div>' +
+                    // ── Section 5: Arbitration ──
+                    '<div style="background:#000;color:#fff;font-weight:bold;padding:6px 10px;font-size:13px;">Arbitration of Employment Disputes</div>' +
+                    '<div style="border:2px solid #000;border-top:none;padding:10px;margin-bottom:24px;font-size:11px;">' +
+                    'I acknowledge that all employment disputes shall be resolved through binding arbitration under AAA rules. I understand I am waiving my right to a jury trial. This is a condition of my employment with Iron Age Rego Park LLC.</div>' +
+                    // ── Signatures ──
+                    '<div style="display:flex;justify-content:space-between;margin-top:10px;">' +
+                    '<div style="border-bottom:1.5px solid #000;width:45%;position:relative;height:50px;display:flex;align-items:flex-end;padding-bottom:2px;font-size:12px;font-weight:bold;">Employee Signature:' + empSignHtml + '</div>' +
+                    '<div style="border-bottom:1.5px solid #000;width:30%;position:relative;height:50px;display:flex;align-items:flex-end;padding-bottom:2px;font-size:12px;font-weight:bold;">Date: <b>' + empDateHtml + '</b></div>' +
+                    '</div>' +
+                    '<div style="margin-top:16px;font-size:11px;color:#000;">Employee Name (Print): <b>' + (emp.name||'') + '</b> &nbsp;&nbsp; Position: <b>' + (emp.pos||'') + '</b> &nbsp;&nbsp; Hire Date: <b>' + (emp.hire||'') + '</b></div>' +
+                    '</div>';
+
+            } else if (doc.type === 'DEPOSIT') {
+                // ── Equipment Deposit print layout ──
+                var empSignHtml2 = d.empSign ? '<img src="' + d.empSign + '" style="position:absolute;bottom:2px;left:0;max-height:50px;max-width:200px;">' : '';
+                var mgrSignHtml2 = d.mgrSign ? '<img src="' + d.mgrSign + '" style="position:absolute;bottom:2px;left:0;max-height:50px;max-width:200px;">' : '';
+                var itemRows = (d.items || []).map(function(i) {
+                    return '<tr>' +
+                        '<td style="border:1px solid #000;padding:8px;">' + i.item + '</td>' +
+                        '<td style="border:1px solid #000;padding:8px;text-align:center;">$' + i.deposit.toFixed(2) + '</td>' +
+                        '<td style="border:1px solid #000;padding:8px;text-align:center;">x' + i.qty + '</td>' +
+                        '<td style="border:1px solid #000;padding:8px;text-align:center;">$' + (i.deposit * i.qty).toFixed(2) + '</td>' +
+                        '<td style="border:1px solid #000;padding:8px;text-align:center;">' + (d.returned ? '&#9745; Returned' : '&#9744;') + '</td>' +
+                        '</tr>';
+                }).join('');
+                html = '<div style="font-family:Arial,sans-serif;color:#000;font-size:13px;line-height:1.6;">' +
+                    '<div style="text-align:center;margin-bottom:18px;">' +
+                    '<div style="font-size:26px;font-weight:900;letter-spacing:-1px;font-family:Georgia,serif;">IRON AGE</div>' +
+                    '<div style="font-size:16px;font-weight:bold;margin-top:4px;border-bottom:3px double #000;padding-bottom:8px;">Employee Equipment Deposit Record</div></div>' +
+                    '<table style="width:100%;border-collapse:collapse;margin-bottom:16px;border:2px solid #000;">' +
+                    '<tr><td style="border:1px solid #000;padding:8px;width:50%;">Employee Name:<br><br><b>' + (emp.name||'') + '</b></td>' +
+                    '<td style="border:1px solid #000;padding:8px;">Position:<br><br><b>' + (emp.pos||'') + '</b></td></tr>' +
+                    '<tr><td style="border:1px solid #000;padding:8px;">Issue Date: <b>' + d.date + '</b></td>' +
+                    '<td style="border:1px solid #000;padding:8px;">Return Date: <b>' + (d.returnDate||'—') + '</b></td></tr></table>' +
+                    '<div style="background:#000;color:#fff;font-weight:bold;padding:6px 10px;font-size:13px;">Equipment Issued</div>' +
+                    '<table style="width:100%;border-collapse:collapse;border:2px solid #000;border-top:none;margin-bottom:8px;">' +
+                    '<tr style="background:#e5e7eb;"><th style="border:1px solid #000;padding:8px;text-align:left;">Item</th><th style="border:1px solid #000;padding:8px;">Unit Deposit</th><th style="border:1px solid #000;padding:8px;">Qty</th><th style="border:1px solid #000;padding:8px;">Subtotal</th><th style="border:1px solid #000;padding:8px;">Returned</th></tr>' +
+                    itemRows +
+                    '<tr><td colspan="3" style="border:1px solid #000;padding:8px;font-weight:bold;text-align:right;">TOTAL DEPOSIT</td>' +
+                    '<td colspan="2" style="border:1px solid #000;padding:8px;font-weight:bold;font-size:16px;">$' + (d.total||'0') + '</td></tr></table>' +
+                    '<div style="font-size:11px;margin-bottom:20px;padding:8px;border:1px solid #ccc;">I acknowledge receipt of the above equipment and understand that the deposit will be refunded upon return of all items in good condition. I am responsible for any damage or loss.</div>' +
+                    '<div style="display:flex;justify-content:space-between;margin-top:20px;">' +
+                    '<div style="border-bottom:1.5px solid #000;width:45%;position:relative;height:50px;display:flex;align-items:flex-end;padding-bottom:2px;font-size:12px;font-weight:bold;">Employee Signature (Issue):' + empSignHtml2 + '</div>' +
+                    '<div style="border-bottom:1.5px solid #000;width:30%;position:relative;height:50px;display:flex;align-items:flex-end;padding-bottom:2px;font-size:12px;font-weight:bold;">Date: <b>' + empDateHtml + '</b></div>' +
+                    '</div>' +
+                    '<div style="display:flex;justify-content:space-between;margin-top:24px;">' +
+                    '<div style="border-bottom:1.5px solid #000;width:45%;position:relative;height:50px;display:flex;align-items:flex-end;padding-bottom:2px;font-size:12px;font-weight:bold;">Manager Signature (Return):' + mgrSignHtml2 + '</div>' +
+                    '<div style="border-bottom:1.5px solid #000;width:30%;position:relative;height:50px;display:flex;align-items:flex-end;padding-bottom:2px;font-size:12px;font-weight:bold;">Date: <b>' + mgrDateHtml + '</b></div>' +
+                    '</div></div>';
             }
             document.getElementById('preview-content').innerHTML = html;
             openPreviewModal();
