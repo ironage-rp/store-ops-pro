@@ -1532,7 +1532,7 @@
                     supa.from('staff_files').select('*')
                 ]);
                 var backupData = {
-                    version: "5.0.3",
+                    version: "5.0.4",
                     settings:    results[3].data ? results[3].data.data : db.settings,
                     employees:   (results[0].data || []).map(function(r) { return r.data; }),
                     docs:        results[1].data || [],
@@ -2023,7 +2023,7 @@
                 // ══════════════════════════════════════════════════════
                 // PAGE 5 — Arbitration p.1  (Times New Roman style)
                 // ══════════════════════════════════════════════════════
-                '<div style="' + PB + FONT + 'font-size:12px;font-family:\'Times New Roman\',Times,serif;padding:0.8in 1in;background:#fff;line-height:1.6;">' +
+                '<div style="' + FONT + 'font-size:12px;font-family:\'Times New Roman\',Times,serif;padding:0.8in 1in;background:#fff;line-height:1.6;page-break-after:avoid;">' +
                 '<div style="text-align:center;font-weight:bold;text-decoration:underline;font-size:14px;margin-bottom:16px;">ARBITRATION OF EMPLOYMENT DISPUTES</div>' +
                 '<div style="text-align:left;font-weight:bold;font-size:12px;margin-bottom:20px;">[IMPORTANT-ALL EMPLOYEES ARE DIRECTED TO READ THIS POLICY VERY CAREFULLY BECAUSE IT AFFECTS THEIR LEGAL RIGHTS AS EMPOYEES OF Iron Age Rego Park LLC., HEREIN CALLED THE EMPLOYER.]</div>' +
                 '<p style="text-indent:40px;margin-bottom:12px;">Any and all alleged legal disputes, claims injuries and/or other alleged wrongdoings of any kind arising out of or relating to, either directly or indirectly, the entire course of my employment relationship with the Employer, the termination of that relationship, and any and all subsequent events relating to such employment and termination, shall be submitted exclusively to final and binding arbitration under the rules and regulations of the American Arbitration Association (AAA) for the resolution of employment disputes, as the only means for resolving any and all such disputes between me and the Employer.</p>' +
@@ -2037,7 +2037,7 @@
                 // ══════════════════════════════════════════════════════
                 // PAGE 6 — Arbitration p.2  (signature lines matching original)
                 // ══════════════════════════════════════════════════════
-                '<div style="' + FONT + 'font-size:12px;font-family:\'Times New Roman\',Times,serif;padding:0.8in 1in;background:#fff;line-height:1.6;">' +
+                '<div style="' + FONT + 'font-size:12px;font-family:\'Times New Roman\',Times,serif;padding:0.8in 1in;background:#fff;line-height:1.6;page-break-before:always;">' +
                 '<p style="margin-bottom:12px;">otherwise insure fairness and due process in the arbitration process and hearings, all in accordance with the AAA\'s rules and regulations for the arbitration of employment disputes.</p>' +
                 '<p style="text-indent:40px;margin-bottom:12px;">For issues involving prehearing discovery, procedures before and during the hearing, and admissibility of evidence and other evidentiary matters which are not addressed by these rules and regulations, the arbitrator shall be guided, but not controlled, by the Federal Rules of Civil Procedure and the Federal Rules of Evidence.  In seeking such guidance from these Rules the arbitrator shall balance the needs of fairness and due process against the purposes of arbitration to provide a quicker, less costly and less cumbersome process than the courts for the resolution of employment disputes.</p>' +
                 '<p style="text-indent:40px;margin-bottom:12px;">I also understand that if I want to bring any claim relating to my employment against the Employer under this arbitration procedure, I must deliver a written demand for arbitration to the Employer at its corporate headquarters.</p>' +
