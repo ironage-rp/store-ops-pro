@@ -1532,7 +1532,7 @@
                     supa.from('staff_files').select('*')
                 ]);
                 var backupData = {
-                    version: "5.0.2",
+                    version: "5.0.3",
                     settings:    results[3].data ? results[3].data.data : db.settings,
                     employees:   (results[0].data || []).map(function(r) { return r.data; }),
                     docs:        results[1].data || [],
@@ -1885,6 +1885,13 @@
                 'Physical Address:<br><div style="font-size:12px;margin:2px 0 8px 0;">' + (d.bizAddress||'') + '</div>' +
                 'Mailing Address:<br><div style="font-size:12px;margin:2px 0 8px 0;">' + (d.bizMail||'') + '</div>' +
                 'Phone:<br><div style="font-size:13px;font-weight:bold;margin:2px 0 4px 0;">' + (d.bizPhone||'') + '</div>' +
+                // Notice given — inside left col, aligned with section 7
+                '<div style="margin-top:12px;">' +
+                '<div style="font-weight:bold;margin-bottom:4px;">2. Notice given:</div>' +
+                '<div style="margin:2px 0;font-size:10.5px;">' + chk(d.noticeGiven==='At hiring') + ' At hiring</div>' +
+                '<div style="margin:2px 0;font-size:10.5px;">' + chk(d.noticeGiven==='On or before February 1st') + ' On or before February 1st</div>' +
+                '<div style="margin:2px 0;font-size:10.5px;">' + chk(d.noticeGiven==='Before a change in pay rate') + ' Before a change in pay rate(s), allowances claimed or payday</div>' +
+                '</div>' +
                 '</td>' +
                 // Middle col — pay details
                 '<td style="width:35%;border:1px solid #000;padding:8px;vertical-align:top;">' +
@@ -1919,13 +1926,6 @@
                 '<div style="border-bottom:1px solid #000;height:28px;margin-bottom:2px;display:flex;align-items:flex-end;"><b style="font-size:11px;">' + (d.ls54Preparer||'') + '</b></div>' +
                 '<div style="font-size:10px;">Preparer\'s Name and Title</div>' +
                 '</td></tr></table>' +
-                // FIX #2: Notice given moved here (bottom-left, below main table)
-                '<div style="margin-top:8px;font-size:11px;">' +
-                '<div style="font-weight:bold;margin-bottom:4px;">2. Notice given:</div>' +
-                '<div style="margin:2px 0;">' + chk(d.noticeGiven==='At hiring') + ' At hiring</div>' +
-                '<div style="margin:2px 0;">' + chk(d.noticeGiven==='On or before February 1st') + ' On or before February 1st</div>' +
-                '<div style="margin:2px 0;">' + chk(d.noticeGiven==='Before a change in pay rate') + ' Before a change in pay rate(s), allowances claimed or payday</div>' +
-                '</div>' +
                 '<p style="font-size:10px;font-weight:bold;margin-top:8px;">The employee must receive a signed copy of this form. The employer must keep the original for 6 years.</p>' +
                 '<p style="font-size:9px;margin-top:4px;color:#000;">LS 54 (03/11)</p>' +
                 '</div>' +
@@ -2044,34 +2044,18 @@
                 '<p style="text-indent:40px;margin-bottom:12px;">I and the Employer are entitled to be represented by attorneys in this arbitration process and the cost of the arbitration will be shared in accordance with the rules by the American Arbitration Association.</p>' +
                 '<p style="text-indent:40px;margin-bottom:12px;">I specifically acknowledge my complete understanding and agreement that the Employer has the absolute right to proceed in court to obtain an order from a judge directing that I must use this arbitration procedure as the only legal method for resolving any and all disputes between me and the Employer concerning my employment.</p>' +
                 '<p style="text-indent:40px;margin-bottom:12px;">I acknowledge my understanding that this provision for arbitration of any and all employment disputes is a condition of the Employer\'s offer of employment or continued employment with the Employer, and my agreement to this provision is in consideration (i.e. in exchange or return) for such offer of employment or continued employment by the Employer.</p>' +
-                // signature block matching original layout
-                // FIX #3: Arbitration sig block
-                // Left = blank line / By: emp sig / Date
-                // Right = Employee Name Print (auto) / Signature line (blank for pen) / Date
-                '<div style="margin-top:40px;">' +
-                '<div style="display:flex;justify-content:space-between;margin-bottom:6px;">' +
-                '<div style="width:42%;border-bottom:1px solid #000;height:32px;">&nbsp;</div>' +
-                '<div style="width:42%;border-bottom:1px solid #000;height:32px;display:flex;align-items:flex-end;"><b>' + (emp.name||'') + '</b></div>' +
-                '</div>' +
-                '<div style="display:flex;justify-content:space-between;margin-bottom:22px;">' +
-                '<div style="width:42%;"></div>' +
-                '<div style="width:42%;font-size:11px;">Employee\'s Name (Print)</div>' +
-                '</div>' +
-                '<div style="display:flex;justify-content:space-between;margin-bottom:6px;">' +
-                '<div style="width:42%;position:relative;">By:<span style="display:inline-block;border-bottom:1px solid #000;min-width:200px;height:44px;position:relative;vertical-align:bottom;">' + eS + '</span></div>' +
-                '<div style="width:42%;border-bottom:1px solid #000;height:44px;">&nbsp;</div>' +
-                '</div>' +
-                '<div style="display:flex;justify-content:space-between;margin-bottom:22px;">' +
-                '<div style="width:42%;font-size:11px;">Signature of Employee</div>' +
-                '<div style="width:42%;font-size:11px;">&nbsp;</div>' +
-                '</div>' +
-                '<div style="display:flex;justify-content:space-between;margin-bottom:6px;">' +
-                '<div style="width:42%;border-bottom:1px solid #000;height:32px;display:flex;align-items:flex-end;"><b>' + d.date + '</b></div>' +
-                '<div style="width:42%;border-bottom:1px solid #000;height:32px;">&nbsp;</div>' +
-                '</div>' +
-                '<div style="display:flex;justify-content:space-between;">' +
-                '<div style="width:42%;font-size:11px;">Date</div>' +
-                '<div style="width:42%;font-size:11px;">Date</div>' +
+                // Arbitration sig: left empty, right col has name+signature+date
+                '<div style="margin-top:40px;display:flex;justify-content:flex-end;">' +
+                '<div style="width:55%;">' +
+                // Employee name (print)
+                '<div style="border-bottom:1px solid #000;height:32px;margin-bottom:2px;display:flex;align-items:flex-end;"><b>' + (emp.name||'') + '</b></div>' +
+                '<div style="font-size:11px;margin-bottom:20px;">Employee\'s Name (Print)</div>' +
+                // By: employee signature
+                '<div style="margin-bottom:2px;">By:<span style="display:inline-block;border-bottom:1px solid #000;min-width:85%;height:44px;position:relative;vertical-align:bottom;">' + eS + '</span></div>' +
+                '<div style="font-size:11px;margin-bottom:20px;">Signature of Employee</div>' +
+                // Date
+                '<div style="border-bottom:1px solid #000;height:32px;margin-bottom:2px;display:flex;align-items:flex-end;"><b>' + eD + '</b></div>' +
+                '<div style="font-size:11px;">Date</div>' +
                 '</div></div>' +
                 '<div style="text-align:center;margin-top:30px;font-size:11px;">2</div>' +
                 '</div>';
