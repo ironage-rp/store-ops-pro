@@ -532,6 +532,10 @@
                             <button onclick="openRecipeForm()" class="w-full sm:w-auto bg-primary text-white px-4 py-2 rounded-lg font-bold flex items-center justify-center gap-2 transition text-sm"><span class="material-symbols-outlined">add</span> Add Recipe</button>
                         </div>
                     </div>
+                    <div class="relative">
+                        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-textMuted text-[20px]">search</span>
+                        <input type="text" id="recipe-search" placeholder="Search recipes by name or category..." oninput="filterRecipes(this.value)" class="w-full bg-surface border border-white/10 rounded-lg pl-10 pr-4 py-3 text-white placeholder-textMuted focus:border-primary outline-none">
+                    </div>
                     <div id="recipe-editor" class="hidden glass-panel p-4 md:p-6 rounded-xl border border-primary/30 space-y-4">
                         <h3 id="recipe-form-title" class="text-lg font-bold text-primary">Add Recipe</h3>
                         <input type="hidden" id="recipe-id">
@@ -1551,7 +1555,7 @@
                     supa.from('staff_files').select('*')
                 ]);
                 var backupData = {
-                    version: "5.0.5",
+                    version: "5.0.6",
                     settings:    results[3].data ? results[3].data.data : db.settings,
                     employees:   (results[0].data || []).map(function(r) { return r.data; }),
                     docs:        results[1].data || [],
@@ -1952,7 +1956,7 @@
                 // ══════════════════════════════════════════════════════
                 // PAGE 3 — Direct Deposit Request Form  (blue header style)
                 // ══════════════════════════════════════════════════════
-                '<div style="' + PB + FONT + 'font-size:12px;padding:0.5in 0.6in;background:#fff;">' +
+                '<div style="' + FONT + 'font-size:12px;padding:0.5in 0.6in;background:#fff;page-break-before:always;">' +
                 '<div style="border-bottom:2.5px solid #1a6fa8;padding-bottom:6px;margin-bottom:18px;">' +
                 '<div style="font-size:24px;font-weight:bold;color:#1a6fa8 !important;letter-spacing:1px;">DIRECT DEPOSIT REQUEST FORM</div>' +
                 '</div>' +
@@ -2217,6 +2221,15 @@
         }
 
         /* ── Search Filter Functions ── */
+        function filterRecipes(query) {
+            var q = query.toLowerCase().trim();
+            var cards = document.querySelectorAll('#recipe-list-container > div');
+            cards.forEach(function(card) {
+                var text = card.textContent.toLowerCase();
+                card.style.display = (!q || text.includes(q)) ? '' : 'none';
+            });
+        }
+
         function filterEmployees(query) {
             var q = query.toLowerCase().trim();
             var cards = document.querySelectorAll('#emp-list > div');
