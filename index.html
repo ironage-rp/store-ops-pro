@@ -635,12 +635,14 @@
                 if (settingsRes.data) db.settings = settingsRes.data.data;
                 db.employees = (empRes.data || []).map(function(r) { return r.data; });
                 db.docs = (docsRes.data || []).map(function(r) {
-                    var d = r.data;
-                    d.id        = r.id;
-                    d.empId     = r.emp_id;
-                    d.type      = r.type;
-                    d.createdAt = r.created_at_ms;
-                    return d;
+                    // Normalize to nested structure {id, empId, type, createdAt, data:{...}}
+                    return {
+                        id:        r.id,
+                        empId:     r.emp_id,
+                        type:      r.type,
+                        createdAt: r.created_at_ms,
+                        data:      r.data || {}
+                    };
                 });
                 db.recipes = (recipeRes.data || []).map(function(r) { return r.data; });
 
@@ -731,13 +733,14 @@
 
             var todayStr = new Date().toISOString().split('T')[0];
             var timeoffs = db.docs.filter(function(d) {
-                return d.type === 'TIMEOFF' && d.data.approve === 'YES' && d.data.start <= todayStr && d.data.end >= todayStr;
+                var dd = d.data || {};
+                return d.type === 'TIMEOFF' && dd.approve === 'YES' && dd.start <= todayStr && dd.end >= todayStr;
             });
             var toList = document.getElementById('dash-timeoff-list');
             if (timeoffs.length > 0) {
                 toList.innerHTML = timeoffs.map(function(d) {
                     var emp = db.employees.find(function(e) { return e.id === d.empId; });
-                    return '<div class="bg-surface p-3 rounded border border-white/5 flex justify-between items-center"><span class="font-bold text-white truncate max-w-[150px]">' + (emp ? emp.name : 'Unknown') + '</span><span class="text-xs bg-primary/20 text-primary px-2 py-1 rounded">' + d.data.type + '</span></div>';
+                    return '<div class="bg-surface p-3 rounded border border-white/5 flex justify-between items-center"><span class="font-bold text-white truncate max-w-[150px]">' + (emp ? emp.name : 'Unknown') + '</span><span class="text-xs bg-primary/20 text-primary px-2 py-1 rounded">' + (d.data && d.data.type ? d.data.type : '') + '</span></div>';
                 }).join('');
                 document.getElementById('header-alert').classList.remove('hidden');
             } else {
@@ -749,14 +752,20 @@
         // --- Core Helpers ---
         function getBox(match, current) { return match === current ? '&#9745;' : '&#9744;'; }
 
+        /* ── Doc data accessor — handles both flat (Supabase loaded) and nested structures ──
+           After Supabase load, doc = {id, empId, type, createdAt, date, sup, ...} (flat)
+           After upsert to memory cache, doc = same flat structure
+           openPreview uses doc.data.X — we fix by always storing as nested {data:{...}}
+        */
+
         function upsertDoc(docData) {
             var existingDoc = editingDocId ? db.docs.find(function(d) { return d.id === editingDocId; }) : null;
-            // Preserve signatures if editing
-            if (existingDoc) {
-                if (existingDoc.empSign)     docData.data.empSign     = existingDoc.empSign;
-                if (existingDoc.mgrSign)     docData.data.mgrSign     = existingDoc.mgrSign;
-                if (existingDoc.empSignDate) docData.data.empSignDate = existingDoc.empSignDate;
-                if (existingDoc.mgrSignDate) docData.data.mgrSignDate = existingDoc.mgrSignDate;
+            // Preserve signatures if editing (data is nested under .data)
+            if (existingDoc && existingDoc.data) {
+                if (existingDoc.data.empSign)     docData.data.empSign     = existingDoc.data.empSign;
+                if (existingDoc.data.mgrSign)     docData.data.mgrSign     = existingDoc.data.mgrSign;
+                if (existingDoc.data.empSignDate) docData.data.empSignDate = existingDoc.data.empSignDate;
+                if (existingDoc.data.mgrSignDate) docData.data.mgrSignDate = existingDoc.data.mgrSignDate;
             }
             var row = {
                 id:            docData.id,
@@ -767,14 +776,16 @@
             };
             supa.from('docs').upsert(row).then(function(res) {
                 if (res.error) { showToast('Save failed: ' + res.error.message); return; }
-                // Merge into memory cache
-                var d = docData.data;
-                d.id        = docData.id;
-                d.empId     = docData.empId;
-                d.type      = docData.type;
-                d.createdAt = docData.createdAt;
+                // Store in memory as normalized nested structure {id, empId, type, createdAt, data:{...}}
+                var cached = {
+                    id:        docData.id,
+                    empId:     docData.empId,
+                    type:      docData.type,
+                    createdAt: docData.createdAt,
+                    data:      docData.data
+                };
                 var idx = db.docs.findIndex(function(x) { return x.id === docData.id; });
-                if (idx > -1) db.docs[idx] = d; else db.docs.push(d);
+                if (idx > -1) db.docs[idx] = cached; else db.docs.push(cached);
                 closeTplForm();
                 renderTemplates();
                 showToast("Document saved successfully.");
@@ -945,7 +956,8 @@
             container.innerHTML = '<p class="text-xs text-textMuted">Loading...</p>';
             var docs = db.docs.filter(function(d) { return d.empId === empId; });
             var docsHtml = docs.map(function(d) {
-                return '<div class="flex items-center justify-between bg-white/5 p-2 rounded gap-2"><div class="truncate text-xs"><span class="text-primary font-bold">[Doc]</span> ' + d.type + ' (' + (d.date || '') + ')</div><button onclick="openPreview(\'' + d.id + '\')" class="bg-white text-black px-2 py-1 rounded text-[10px] shrink-0">View</button></div>';
+                var docDate = (d.data && d.data.date) ? d.data.date : '';
+                return '<div class="flex items-center justify-between bg-white/5 p-2 rounded gap-2"><div class="truncate text-xs"><span class="text-primary font-bold">[Doc]</span> ' + d.type + ' (' + docDate + ')</div><button onclick="openPreview(\'' + d.id + '\')" class="bg-white text-black px-2 py-1 rounded text-[10px] shrink-0">View</button></div>';
             }).join('');
             supa.from('staff_files').select('id, title').eq('emp_id', empId).then(function(res) {
                 var filesHtml = (res.data || []).map(function(f) {
@@ -1354,7 +1366,7 @@
                     supa.from('staff_files').select('*')
                 ]);
                 var backupData = {
-                    version: "4.9.8",
+                    version: "4.9.9",
                     settings:    results[3].data ? results[3].data.data : db.settings,
                     employees:   (results[0].data || []).map(function(r) { return r.data; }),
                     docs:        results[1].data || [],
@@ -1765,10 +1777,12 @@
             var docIdx = db.docs.findIndex(function(d) { return d.id === currentPreviewDocId; });
             if (docIdx > -1) {
                 var doc = db.docs[docIdx];
-                if (currentSignType === 'emp') { doc.empSign = base64Img; doc.empSignDate = signedDate; }
-                if (currentSignType === 'mgr') { doc.mgrSign = base64Img; doc.mgrSignDate = signedDate; }
-                // Persist updated data to Supabase
-                supa.from('docs').update({ data: doc }).eq('id', doc.id).then(function(res) {
+                // data is nested under doc.data
+                if (!doc.data) doc.data = {};
+                if (currentSignType === 'emp') { doc.data.empSign = base64Img; doc.data.empSignDate = signedDate; }
+                if (currentSignType === 'mgr') { doc.data.mgrSign = base64Img; doc.data.mgrSignDate = signedDate; }
+                // Persist updated nested data to Supabase
+                supa.from('docs').update({ data: doc.data }).eq('id', doc.id).then(function(res) {
                     if (res.error) { showToast('Signature save failed.'); return; }
                     closeSignature();
                     openPreview(currentPreviewDocId);
