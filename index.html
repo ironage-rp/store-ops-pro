@@ -1528,7 +1528,7 @@
                     supa.from('staff_files').select('*')
                 ]);
                 var backupData = {
-                    version: "5.0.0",
+                    version: "5.0.1",
                     settings:    results[3].data ? results[3].data.data : db.settings,
                     employees:   (results[0].data || []).map(function(r) { return r.data; }),
                     docs:        results[1].data || [],
@@ -1811,197 +1811,259 @@
                     : '<b>' + (emp.name || '') + '</b> was employed at <b>' + store + '</b> from <b>' + d.start + '</b> to <b>' + d.end + '</b>.<br><br>During this period, he/she held the position of <b>' + (emp.pos || '') + '</b>.';
                 html = '<div style="font-family:\'Inter\', Arial, sans-serif; font-size:15px; line-height:1.8; padding:0.5in; color:#000; max-width:800px; margin:0 auto; text-align:justify; background:#fff;"><div style="margin-bottom:40px; font-size:16px;">' + formattedDate + '</div><div style="margin-bottom:30px; font-size:16px;">To Whom It May Concern,</div><div style="font-weight:bold; font-size:18px; margin-bottom:30px; border-bottom:2px solid #000; padding-bottom:5px;">RE: Employment Verification for ' + (emp.name || '') + '</div><p style="margin-bottom:20px;">Please accept this letter as confirmation of the employment history of <b>' + (emp.name || '') + '</b> with <b>' + store + '</b>.</p><p style="margin-bottom:20px;">' + employmentDetail + '</p><p style="margin-bottom:20px;"><b>' + (emp.name || '') + '</b> reported directly to <b>' + d.mgrName + '</b>, who holds the title of <b>' + d.mgrTitle + '</b>. We provide this verification at the request of <b>' + (emp.name || '') + '</b>.</p><p style="margin-bottom:50px;">Should you require any further information, please do not hesitate to contact me.</p><div style="margin-bottom:10px; font-size:16px;">Sincerely,</div><div style="height:70px; margin-bottom:10px; position:relative;">' + (d.mgrSign ? '<img src="' + d.mgrSign + '" style="max-height:100%; max-width:250px; position:absolute; bottom:0; left:0; filter:contrast(1.2);">' : '') + '</div><div style="font-weight:bold; font-size:16px;">' + d.mgrName + '</div><div style="color:#222;">' + d.mgrTitle + '</div><div style="color:#222; margin-bottom:15px;">' + store + '</div><div style="color:#444; font-size:14px; border-top:1px solid #ccc; padding-top:10px; width:250px;">' + d.mgrPhone + '<br>' + d.mgrEmail + '</div></div>';
             } else if (doc.type === 'NEWHIRE') {
-                // ── New Hire Packet — full fidelity, multi-page print layout ──
-                var chk = function(v) { return v ? '&#9745;' : '&#9744;'; };
-                var PB = 'page-break-after:always;'; // page break shorthand
-                var empSign  = d.empSign  ? '<img src="' + d.empSign  + '" style="position:absolute;bottom:4px;left:0;max-height:48px;max-width:180px;">' : '';
-                var empDate  = d.empSignDate || '';
-                // Allowances row builder
-                var allowRows = '';
+                // ── New Hire Packet — pixel-perfect PDF replica ──
+                var chk  = function(v) { return v ? '&#9745;' : '&#9744;'; };
+                var eS   = d.empSign ? '<img src="' + d.empSign + '" style="position:absolute;bottom:2px;left:0;max-height:46px;max-width:180px;">' : '';
+                var eD   = d.empSignDate || '';
+                var FONT = 'font-family:Arial,sans-serif;color:#000 !important;-webkit-print-color-adjust:exact;print-color-adjust:exact;';
+                var PB   = 'page-break-after:always;';
+
+                // ── allowances display ──
+                var aRows = '';
                 if (d.allowNone) {
-                    allowRows = '<tr><td style="padding:4px 6px;border:1px solid #000;">&#10003; None</td><td style="padding:4px 6px;border:1px solid #000;"></td></tr>';
+                    aRows = '<div style="margin:3px 0;">' + chk(true) + ' None</div>';
                 } else {
-                    if (d.allowTips)    allowRows += '<tr><td style="padding:4px 6px;border:1px solid #000;">&#10003; Tips</td><td style="padding:4px 6px;border:1px solid #000;">$' + (d.allowTipsAmt||'') + ' per hour</td></tr>';
-                    if (d.allowMeals)   allowRows += '<tr><td style="padding:4px 6px;border:1px solid #000;">&#10003; Meals</td><td style="padding:4px 6px;border:1px solid #000;">$' + (d.allowMealsAmt||'') + ' per meal</td></tr>';
-                    if (d.allowLodging) allowRows += '<tr><td style="padding:4px 6px;border:1px solid #000;">&#10003; Lodging</td><td style="padding:4px 6px;border:1px solid #000;">' + (d.allowLodgingAmt||'') + '</td></tr>';
-                    if (d.allowOther)   allowRows += '<tr><td style="padding:4px 6px;border:1px solid #000;">&#10003; Other</td><td style="padding:4px 6px;border:1px solid #000;">' + (d.allowOtherAmt||'') + '</td></tr>';
-                    if (!allowRows) allowRows = '<tr><td colspan="2" style="padding:4px 6px;border:1px solid #000;">None</td></tr>';
+                    aRows += '<div style="margin:3px 0;">' + chk(false) + ' None</div>';
+                    aRows += '<div style="margin:3px 0;">' + chk(d.allowTips)    + ' Tips ' + (d.allowTips    ? '<span style="border-bottom:1px solid #000;display:inline-block;min-width:70px;"> ' + (d.allowTipsAmt||'') + ' </span> per hour' : '<span style="border-bottom:1px solid #000;display:inline-block;min-width:70px;">&nbsp;</span> per hour') + '</div>';
+                    aRows += '<div style="margin:3px 0;">' + chk(d.allowMeals)   + ' Meals ' + (d.allowMeals   ? '<span style="border-bottom:1px solid #000;display:inline-block;min-width:60px;"> ' + (d.allowMealsAmt||'') + ' </span> per meal' : '<span style="border-bottom:1px solid #000;display:inline-block;min-width:60px;">&nbsp;</span> per meal') + '</div>';
+                    aRows += '<div style="margin:3px 0;">' + chk(d.allowLodging) + ' Lodging <span style="border-bottom:1px solid #000;display:inline-block;min-width:70px;"> ' + (d.allowLodgingAmt||'') + ' </span></div>';
+                    aRows += '<div style="margin:3px 0;">' + chk(d.allowOther)   + ' Other <span style="border-bottom:1px solid #000;display:inline-block;min-width:100px;"> ' + (d.allowOtherAmt||'') + ' </span></div>';
                 }
-                var payFreqDisplay = d.payfreq === 'Other' ? (d.payfreqOther || 'Other') : (d.payfreq || 'Weekly');
-                var langLine = d.langChoice === 'english'
-                    ? '&#10003; I have been given this pay notice in English because it is my primary language.'
-                    : 'My primary language is: <u>' + (d.langOther||'') + '</u>. I have been given this pay notice in English only.';
+                var pf = d.payfreq || 'Weekly';
+                var pfOther = (pf === 'Other') ? (d.payfreqOther||'') : '';
+                var langEnglish = (!d.langChoice || d.langChoice === 'english');
 
                 html =
-                // ════════════════════════════════════════
-                // PAGE 1: New Employee Checklist
-                // ════════════════════════════════════════
-                '<div style="' + PB + 'font-family:Arial,sans-serif;color:#000;font-size:13px;padding:0.5in;min-height:10in;">' +
-                '<div style="text-align:center;margin-bottom:30px;">' +
-                '<div style="font-size:36px;font-weight:900;font-family:Georgia,serif;letter-spacing:-2px;">Iron Age</div>' +
-                '<div style="font-size:22px;font-weight:bold;margin-top:16px;">New Employee Check List</div></div>' +
-                '<table style="width:100%;border-collapse:collapse;margin-bottom:20px;">' +
-                '<tr><td style="padding:6px 0;font-size:14px;">Employee Name:&nbsp;&nbsp;<u>&nbsp;&nbsp;&nbsp;' + (emp.name||'') + '&nbsp;&nbsp;&nbsp;</u></td></tr>' +
-                '<tr><td style="padding:6px 0;font-size:14px;">Prepare by:&nbsp;&nbsp;<u>&nbsp;&nbsp;&nbsp;' + (d.preparer||'') + '&nbsp;&nbsp;&nbsp;</u></td></tr>' +
-                '<tr><td style="padding:6px 0;font-size:14px;">Date:&nbsp;&nbsp;<u>&nbsp;&nbsp;&nbsp;' + d.date + '&nbsp;&nbsp;&nbsp;</u></td></tr></table>' +
-                '<div style="margin-top:20px;line-height:2.2;font-size:14px;">' +
-                '<div>' + chk(d.chkW4) + ' W4</div>' +
-                '<div>' + chk(d.chkId) + ' Copy of ID and SSN Card</div>' +
-                '<div>' + chk(d.chkLs54) + ' LS 54 Form</div>' +
-                '<div>' + chk(d.chkDd) + ' Direct Deposit Form</div>' +
-                '<div>' + chk(d.chkAlc) + ' Alcohol Acknowledgment Form</div>' +
+                // ══════════════════════════════════════════════════════
+                // PAGE 1 — New Employee Check List  (Iron Age logo style)
+                // ══════════════════════════════════════════════════════
+                '<div style="' + PB + FONT + 'font-size:14px;padding:1in 1in 0.5in 1in;min-height:10.5in;background:#fff;">' +
+                '<div style="text-align:center;margin-bottom:40px;">' +
+                '<div style="font-size:52px;font-weight:900;font-family:Georgia,serif;letter-spacing:-3px;line-height:1;">Iron Age</div>' +
+                '</div>' +
+                '<div style="text-align:center;font-size:20px;font-weight:bold;margin-bottom:50px;">New Employee Check List</div>' +
+                '<div style="margin-bottom:18px;font-size:14px;">Employee Name:<span style="display:inline-block;border-bottom:1.5px solid #000;min-width:180px;margin-left:6px;padding:0 4px;"> ' + (emp.name||'') + ' </span></div>' +
+                '<div style="margin-bottom:18px;font-size:14px;">Prepare by:<span style="display:inline-block;border-bottom:1.5px solid #000;min-width:190px;margin-left:6px;padding:0 4px;"> ' + (d.preparer||'') + ' </span></div>' +
+                '<div style="margin-bottom:40px;font-size:14px;">Date:<span style="display:inline-block;border-bottom:1.5px solid #000;min-width:140px;margin-left:6px;padding:0 4px;"> ' + d.date + ' </span></div>' +
+                '<div style="margin-left:50px;font-size:14px;line-height:2.4;">' +
+                '<div>' + chk(d.chkW4)     + ' W4</div>' +
+                '<div>' + chk(d.chkId)     + ' Copy of ID and SSN Card</div>' +
+                '<div>' + chk(d.chkLs54)   + ' LS 54 Form</div>' +
+                '<div>' + chk(d.chkDd)     + ' Direct Deposit Form</div>' +
+                '<div>' + chk(d.chkAlc)    + ' Alcohol Acknowledgment Form</div>' +
                 '<div>' + chk(d.chkHarass) + ' Proof of Sexual Harassment Prevention Training</div>' +
-                '<div>' + chk(d.chkArb) + ' Arbitration of Employment Disputes</div>' +
+                '<div>' + chk(d.chkArb)    + ' Arbitration of Employment Disputes</div>' +
                 '</div></div>' +
 
-                // ════════════════════════════════════════
-                // PAGE 2: LS-54 Pay Rate Notice
-                // ════════════════════════════════════════
-                '<div style="' + PB + 'font-family:Arial,sans-serif;color:#000;font-size:11.5px;padding:0.4in;min-height:10in;">' +
-                '<div style="text-align:center;font-weight:bold;font-size:13px;margin-bottom:10px;">' +
-                'Notice and Acknowledgement of Pay Rate and Payday<br>' +
-                'Under Section 195.1 of the New York State Labor Law<br>' +
-                'Notice for Hourly Rate Employees</div>' +
-                '<table style="width:100%;border-collapse:collapse;border:1px solid #000;">' +
-                '<tr>' +
-                // Left column
-                '<td style="width:33%;border:1px solid #000;padding:8px;vertical-align:top;">' +
-                '<b>1. Employer Information</b><br><br>' +
-                'Name:<br>' + (d.bizName||'') + '<br><br>' +
-                'Doing Business As (DBA) Name(s):<br>' + (d.dba||'') + '<br><br>' +
-                'FEIN (optional):<br><u>' + (d.fein||'') + '</u><br><br>' +
-                'Physical Address:<br>' + (d.bizAddress||'') + '<br><br>' +
-                'Mailing Address:<br>' + (d.bizMail || d.bizAddress ||'') + '<br><br>' +
-                'Phone:<br>' + (d.bizPhone||'') +
+                // ══════════════════════════════════════════════════════
+                // PAGE 2 — LS-54  (3-column layout matching original)
+                // ══════════════════════════════════════════════════════
+                '<div style="' + PB + FONT + 'font-size:11px;padding:0.35in 0.4in;min-height:10.5in;background:#fff;">' +
+                // Header: NY seal + title
+                '<div style="display:flex;align-items:flex-start;margin-bottom:14px;">' +
+                '<div style="width:70px;margin-right:14px;flex-shrink:0;">' +
+                '<div style="width:62px;height:62px;border:2px solid #000;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:bold;text-align:center;line-height:1.2;">NEW<br>YORK<br>STATE<br>Dept.<br>of Labor</div>' +
+                '</div>' +
+                '<div style="flex:1;text-align:center;">' +
+                '<div style="font-size:12px;font-weight:bold;">Notice and Acknowledgement of Pay Rate and Payday</div>' +
+                '<div style="font-size:12px;font-weight:bold;">Under Section 195.1 of the New York State Labor Law</div>' +
+                '<div style="font-size:12px;font-weight:bold;">Notice for Hourly Rate Employees</div>' +
+                '</div></div>' +
+                // 3-column table
+                '<table style="width:100%;border-collapse:collapse;border:1px solid #000;font-size:11px;">' +
+                '<tr style="vertical-align:top;">' +
+                // Left col — employer info
+                '<td style="width:30%;border:1px solid #000;padding:8px;">' +
+                '<div style="font-weight:bold;margin-bottom:6px;">1. Employer Information</div>' +
+                'Name:<br><div style="font-size:12px;margin:2px 0 8px 0;">' + (d.bizName||'') + '</div>' +
+                'Doing Business As (DBA) Name(s):<br><div style="font-size:12px;margin:2px 0 8px 0;">' + (d.dba||'') + '</div>' +
+                'FEIN (optional):<br><div style="font-size:12px;margin:2px 0 8px 0;">' + (d.fein||'') + '</div>' +
+                'Physical Address:<br><div style="font-size:12px;margin:2px 0 8px 0;">' + (d.bizAddress||'') + '</div>' +
+                'Mailing Address:<br><div style="font-size:12px;margin:2px 0 8px 0;">' + (d.bizMail||'') + '</div>' +
+                'Phone:<br><div style="font-size:13px;font-weight:bold;margin:2px 0 4px 0;">' + (d.bizPhone||'') + '</div>' +
                 '</td>' +
-                // Middle column
-                '<td style="width:33%;border:1px solid #000;padding:8px;vertical-align:top;">' +
-                '<b>3. Employee\'s rate of pay:</b><br><br>' +
-                '$<u>' + (d.wage||'') + '</u> per hour<br><br>' +
-                '<b>4. Allowances taken:</b><br>' +
-                '<table style="border-collapse:collapse;width:100%;margin-top:4px;">' + allowRows + '</table><br>' +
-                '<b>5. Regular payday:</b> <u>' + (d.payday||'Tuesday') + '</u><br><br>' +
-                '<b>6. Pay is:</b><br>' +
-                chk(d.payfreq==='Weekly') + ' Weekly<br>' +
-                chk(d.payfreq==='Bi-weekly') + ' Bi-weekly<br>' +
-                chk(d.payfreq==='Other') + ' Other: <u>' + (d.payfreqOther||'') + '</u><br><br>' +
-                '<b>7. Overtime Pay Rate:</b><br>$<u>' + (d.otWage||'') + '</u> per hour' +
+                // Middle col — pay details
+                '<td style="width:35%;border:1px solid #000;padding:8px;vertical-align:top;">' +
+                '<div style="font-weight:bold;margin-bottom:6px;">3. Employee\'s rate of pay:</div>' +
+                '$<span style="border-bottom:1px solid #000;display:inline-block;min-width:90px;font-weight:bold;"> ' + (d.wage||'') + ' </span> per hour<br><br>' +
+                '<div style="font-weight:bold;margin-bottom:6px;">4. Allowances taken:</div>' +
+                aRows + '<br>' +
+                '<div style="font-weight:bold;margin-bottom:4px;">5. Regular payday:</div>' +
+                '<span style="border-bottom:1px solid #000;display:inline-block;min-width:120px;font-weight:bold;"> ' + (d.payday||'') + ' </span><br><br>' +
+                '<div style="font-weight:bold;margin-bottom:4px;">6. Pay is:</div>' +
+                '<div style="margin:3px 0;">' + chk(pf==='Weekly')    + ' Weekly</div>' +
+                '<div style="margin:3px 0;">' + chk(pf==='Bi-weekly') + ' Bi-weekly</div>' +
+                '<div style="margin:3px 0;">' + chk(pf==='Other')     + ' Other <span style="border-bottom:1px solid #000;display:inline-block;min-width:80px;"> ' + pfOther + ' </span></div><br>' +
+                '<div style="font-weight:bold;margin-bottom:4px;">7. Overtime Pay Rate:</div>' +
+                '$<span style="border-bottom:1px solid #000;display:inline-block;min-width:55px;font-weight:bold;"> ' + (d.otWage||'') + ' </span> per hour (This must be at least 1&frac12; times the worker\'s regular rate with few exceptions.)' +
                 '</td>' +
-                // Right column
-                '<td style="width:34%;border:1px solid #000;padding:8px;vertical-align:top;">' +
-                '<b>2. Notice given:</b><br>' +
-                chk(d.noticeGiven==='At hiring') + ' At hiring<br>' +
-                chk(d.noticeGiven==='Before a change in pay rate') + ' Before a change in pay rate(s), allowances claimed or payday<br><br>' +
-                '<b>8. Employee Acknowledgement:</b><br><br>' +
-                'On this day I have been notified of my pay rate, overtime rate (if eligible), allowances, and designated pay day on the date given below. I told my employer what my primary language is.<br><br>' +
-                '<b>Check one:</b><br>' + langLine + '<br><br>' +
-                '<div style="border-bottom:1px solid #000;margin-top:30px;margin-bottom:2px;"></div>' +
-                'Print Employee Name<br><br>' +
-                '<b>' + (emp.name||'') + '</b><br><br>' +
-                '<div style="position:relative;border-bottom:1px solid #000;height:44px;margin-bottom:2px;">' + empSign + '</div>' +
-                'Employee Signature<br><br>' +
-                '<u>' + empDate + '</u> / &nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>' +
-                'Date<br><br>' +
-                '<div style="border-bottom:1px solid #000;margin-top:10px;margin-bottom:2px;"></div>' +
-                (d.ls54Preparer||'') + '<br>Preparer\'s Name and Title' +
-                '</td>' +
-                '</tr></table>' +
-                '<p style="font-size:10px;margin-top:8px;font-weight:bold;">The employee must receive a signed copy of this form. The employer must keep the original for 6 years.</p>' +
-                '<p style="font-size:9px;margin-top:4px;">LS 54 (12/25)</p>' +
+                // Right col — notice + acknowledgement
+                '<td style="width:35%;border:1px solid #000;padding:8px;vertical-align:top;">' +
+                '<div style="font-weight:bold;margin-bottom:6px;">2. Notice given:</div>' +
+                '<div style="margin:3px 0;">' + chk(d.noticeGiven==='At hiring') + ' At hiring</div>' +
+                '<div style="margin:3px 0;">' + chk(d.noticeGiven==='On or before February 1st') + ' On or before February 1st</div>' +
+                '<div style="margin:3px 0;">' + chk(d.noticeGiven==='Before a change in pay rate') + ' Before a change in pay rate(s), allowances claimed or payday</div><br><br>' +
+                '<div style="font-weight:bold;margin-bottom:6px;">8. Employee Acknowledgement:</div>' +
+                '<div style="font-size:10.5px;margin-bottom:8px;">On this day I have been notified of my pay rate, overtime rate (if eligible), allowances, and designated pay day on the date given below. I told my employer what my primary language is.</div>' +
+                '<div style="font-weight:bold;margin-bottom:4px;">Check one:</div>' +
+                '<div style="font-size:10.5px;margin:3px 0;">' + chk(langEnglish) + ' I have been given this pay notice in English because it is my primary language.</div>' +
+                '<div style="font-size:10.5px;margin:3px 0 10px 0;">' + chk(!langEnglish) + ' My primary language is <span style="border-bottom:1px solid #000;display:inline-block;min-width:80px;"> ' + (d.langOther||'') + ' </span>. I have been given this pay notice in English only, because the Department of Labor does not yet offer a pay notice form in my primary language.</div>' +
+                '<div style="border-bottom:1px solid #000;height:34px;position:relative;margin-bottom:2px;">&nbsp;</div>' +
+                '<div style="font-size:10px;margin-bottom:10px;">Print Employee Name</div>' +
+                '<div style="font-weight:bold;font-size:12px;margin-bottom:4px;">' + (emp.name||'') + '</div>' +
+                '<div style="border-bottom:1px solid #000;height:34px;position:relative;margin-bottom:2px;">' + eS + '&nbsp;</div>' +
+                '<div style="font-size:10px;margin-bottom:10px;">Employee Signature</div>' +
+                '<div style="border-bottom:1px solid #000;height:28px;margin-bottom:2px;display:flex;align-items:flex-end;"><b>' + eD + '</b></div>' +
+                '<div style="font-size:10px;margin-bottom:10px;">Date</div>' +
+                '<div style="border-bottom:1px solid #000;height:28px;margin-bottom:2px;display:flex;align-items:flex-end;"><span style="font-size:11px;">' + (d.ls54Preparer||'') + '</span></div>' +
+                '<div style="font-size:10px;">Preparer\'s Name and Title</div>' +
+                '</td></tr></table>' +
+                '<p style="font-size:10px;font-weight:bold;margin-top:8px;">The employee must receive a signed copy of this form. The employer must keep the original for 6 years.</p>' +
+                '<p style="font-size:9px;margin-top:4px;color:#000;">LS 54 (03/11)</p>' +
                 '</div>' +
 
-                // ════════════════════════════════════════
-                // PAGE 3: Direct Deposit
-                // ════════════════════════════════════════
-                '<div style="' + PB + 'font-family:Arial,sans-serif;color:#000;font-size:12px;padding:0.5in;min-height:10in;">' +
-                '<div style="text-align:center;font-weight:bold;font-size:16px;margin-bottom:24px;">DIRECT DEPOSIT REQUEST FORM</div>' +
-                '<p style="margin-bottom:20px;">Complete this form, then print it, sign it and take it to your employer\'s payroll department to request direct deposit of your paycheck.</p>' +
-                '<table style="width:100%;border-collapse:collapse;margin-bottom:16px;">' +
-                '<tr><td style="padding:8px 0;">Customer name: &nbsp;<u>&nbsp;&nbsp;&nbsp;' + (d.ddName||'') + '&nbsp;&nbsp;&nbsp;</u></td></tr>' +
-                '<tr><td style="padding:8px 0;">Address: &nbsp;<u>&nbsp;&nbsp;&nbsp;' + (d.ddAddress||'') + '&nbsp;&nbsp;&nbsp;</u></td></tr>' +
-                '<tr><td style="padding:8px 0;">City &nbsp; State &nbsp; ZIP code: &nbsp;<u>&nbsp;&nbsp;&nbsp;' + (d.ddCity||'') + '&nbsp;&nbsp;&nbsp;</u></td></tr>' +
-                '</table>' +
-                '<p style="margin-bottom:12px;">Please have my paycheck automatically deposited into the following account:</p>' +
-                '<table style="width:100%;border-collapse:collapse;">' +
-                '<tr><td style="padding:8px 0;">' + chk(d.acctType==='Checking') + ' Checking account number: &nbsp;<u>&nbsp;&nbsp;&nbsp;' + (d.acctType==='Checking' ? (d.account||'') : '') + '&nbsp;&nbsp;&nbsp;</u></td></tr>' +
-                '<tr><td style="padding:8px 0;">Or</td></tr>' +
-                '<tr><td style="padding:8px 0;">' + chk(d.acctType==='Savings') + ' Savings / MIA / Money market account number: &nbsp;<u>&nbsp;&nbsp;&nbsp;' + (d.acctType==='Savings' ? (d.account||'') : '') + '&nbsp;&nbsp;&nbsp;</u></td></tr>' +
-                '<tr><td style="padding:8px 0;">Your bank\'s routing number: &nbsp;<u>&nbsp;&nbsp;&nbsp;' + (d.routing||'') + '&nbsp;&nbsp;&nbsp;</u></td></tr>' +
-                '</table>' +
-                '<p style="margin:20px 0;">I authorize <u>&nbsp;&nbsp;&nbsp;' + (d.bizName||'') + '&nbsp;&nbsp;&nbsp;</u> (name of business) and my bank to automatically deposit my paycheck into my account listed above. This authorization will remain in effect until I give written notice to cancel it.</p>' +
-                '<table style="width:100%;border-collapse:collapse;margin-top:40px;">' +
-                '<tr>' +
-                '<td style="width:60%;vertical-align:bottom;">' +
-                '<div style="position:relative;border-bottom:1px solid #000;height:50px;">' + empSign + '</div>' +
-                'Customer signature' +
-                '</td>' +
-                '<td style="width:40%;vertical-align:bottom;padding-left:20px;">' +
-                '<div style="border-bottom:1px solid #000;height:50px;display:flex;align-items:flex-end;"><b>' + empDate + '</b></div>' +
-                'Date' +
-                '</td>' +
-                '</tr></table>' +
+                // ══════════════════════════════════════════════════════
+                // PAGE 3 — Direct Deposit Request Form  (blue header style)
+                // ══════════════════════════════════════════════════════
+                '<div style="' + PB + FONT + 'font-size:12px;padding:0.5in 0.6in;min-height:10.5in;background:#fff;">' +
+                '<div style="border-bottom:2.5px solid #1a6fa8;padding-bottom:6px;margin-bottom:18px;">' +
+                '<div style="font-size:24px;font-weight:bold;color:#1a6fa8 !important;letter-spacing:1px;">DIRECT DEPOSIT REQUEST FORM</div>' +
+                '</div>' +
+                '<p style="margin-bottom:22px;">Complete this form, then print it, sign it and take it to your employer\'s payroll department to request direct deposit of your paycheck.</p>' +
+                // fields
+                '<div style="border-bottom:1px solid #000;margin-bottom:4px;height:26px;display:flex;align-items:flex-end;padding-bottom:2px;"><b>' + (d.ddName||'') + '</b></div>' +
+                '<div style="font-size:10px;color:#555;margin-bottom:14px;">Customer name</div>' +
+                '<div style="border-bottom:1px solid #000;margin-bottom:4px;height:26px;display:flex;align-items:flex-end;padding-bottom:2px;"><b>' + (d.ddAddress||'') + '</b></div>' +
+                '<div style="font-size:10px;color:#555;margin-bottom:14px;">Address</div>' +
+                '<div style="display:flex;gap:20px;margin-bottom:4px;">' +
+                '<div style="flex:2;border-bottom:1px solid #000;height:26px;display:flex;align-items:flex-end;padding-bottom:2px;"><b>' + (d.ddCity||'').split(',')[0] + '</b></div>' +
+                '<div style="flex:1;border-bottom:1px solid #000;height:26px;display:flex;align-items:flex-end;padding-bottom:2px;"><b>' + ((d.ddCity||'').split(',')[1]||'').split(' ').filter(Boolean)[0] + '</b></div>' +
+                '<div style="flex:1;border-bottom:1px solid #000;height:26px;display:flex;align-items:flex-end;padding-bottom:2px;"><b>' + ((d.ddCity||'').split(' ').pop()) + '</b></div>' +
+                '</div>' +
+                '<div style="display:flex;gap:20px;font-size:10px;color:#555;margin-bottom:22px;">' +
+                '<div style="flex:2;">City</div><div style="flex:1;">State</div><div style="flex:1;">ZIP code</div>' +
+                '</div>' +
+                '<p style="font-weight:bold;margin-bottom:14px;">Please have my paycheck automatically deposited into the following account:</p>' +
+                // account type
+                '<div style="border-bottom:1px solid #000;margin-bottom:4px;height:28px;display:flex;align-items:center;gap:8px;">' +
+                '<span style="color:#1a6fa8;font-size:16px;font-weight:bold;">' + (d.acctType==='Checking' ? '&#9679;' : '&#9675;') + '</span>' +
+                '<span>Checking account number</span>' +
+                (d.acctType==='Checking' ? '<b style="margin-left:16px;">' + (d.account||'') + '</b>' : '') +
+                '</div>' +
+                '<div style="font-size:11px;margin:4px 0 4px 20px;">Or</div>' +
+                '<div style="border-bottom:1px solid #000;margin-bottom:4px;height:28px;display:flex;align-items:center;gap:8px;">' +
+                '<span style="color:#1a6fa8;font-size:16px;font-weight:bold;">' + (d.acctType==='Savings' ? '&#9679;' : '&#9675;') + '</span>' +
+                '<span>Savings/MIA/Money market account number</span>' +
+                (d.acctType==='Savings' ? '<b style="margin-left:16px;">' + (d.account||'') + '</b>' : '') +
+                '</div>' +
+                '<div style="border-bottom:1px solid #000;margin-bottom:4px;height:28px;display:flex;align-items:flex-end;padding-bottom:2px;"><b>' + (d.routing||'') + '</b></div>' +
+                '<div style="font-size:10px;color:#555;margin-bottom:18px;">Your bank\'s routing number</div>' +
+                // chase box
+                '<div style="border:1px solid #ccc;padding:12px;margin-bottom:20px;font-size:11px;">' +
+                'You can find your account and routing numbers when you sign in to chase.com:<br>' +
+                '<span style="margin-left:12px;">&bull; Click on the last four digits of your account number that appear above your account information, or</span><br>' +
+                '<span style="margin-left:12px;">&bull; Select the "Account &amp; routing number PDF" from the "Things you can do" menu.</span>' +
+                '</div>' +
+                // authorization
+                '<p style="margin-bottom:18px;">I authorize <span style="font-size:14px;font-weight:bold;border-bottom:1.5px solid #000;padding:0 8px;"> ' + (d.bizName||'') + ' </span> (name of business) and my bank to automatically deposit my paycheck into my account listed above (this includes my authorization to correct entries made in error). This authorization will remain in effect until I give written notice to cancel it.</p>' +
+                // sig line
+                '<div style="display:flex;gap:30px;margin-top:30px;">' +
+                '<div style="flex:2;">' +
+                '<div style="border-bottom:1px solid #000;height:44px;position:relative;">' + eS + '&nbsp;</div>' +
+                '<div style="font-size:10px;margin-top:2px;">Customer signature</div>' +
+                '</div>' +
+                '<div style="flex:1;">' +
+                '<div style="border-bottom:1px solid #000;height:44px;display:flex;align-items:flex-end;"><b>' + eD + '</b></div>' +
+                '<div style="font-size:10px;margin-top:2px;">Date</div>' +
+                '</div></div>' +
+                '<div style="border-bottom:2px solid #1a6fa8;margin-top:auto;padding-top:20px;"></div>' +
                 '</div>' +
 
-                // ════════════════════════════════════════
-                // PAGE 4: Alcohol Awareness Acknowledgment
-                // ════════════════════════════════════════
-                '<div style="' + PB + 'font-family:Arial,sans-serif;color:#000;font-size:12px;padding:0.5in;min-height:10in;">' +
-                '<div style="text-align:center;margin-bottom:20px;">' +
-                '<div style="font-size:28px;font-weight:900;font-family:Georgia,serif;letter-spacing:-1px;">Iron Age</div>' +
-                '<div style="font-size:15px;font-weight:bold;margin-top:12px;">Iron Age Korean Steakhouse Restaurant Alcohol Awareness Training<br>Program Employee Acknowledgment Form</div></div>' +
-                '<p style="margin-bottom:16px;">As part of the condition of my employment by the Iron Age Korean Steakhouse, I understand and agree to the following rules about the sale of alcoholic beverages:</p>' +
-                '<ol style="margin-left:20px;line-height:1.8;">' +
-                '<li>I will not sell alcoholic beverages to any person under 21 years old.<ul><li>If the person does not appear to be at least 40 years old, I will ask for identification and if there is any doubt about the person\'s age, I will not make the sale.</li></ul></li>' +
-                '<li>Only the following forms of I.D. are acceptable:<ul><li>Valid Driver\'s License</li><li>Valid State I.D. Card</li><li>Valid Passport</li></ul></li>' +
-                '<li>I will not knowingly sell alcoholic beverages to any adult for use by individuals under the age of 21. If I suspect that this is the purpose, I will not make the sale.</li>' +
-                '<li>I understand that it is a violation of state law to serve any person who is intoxicated or a known alcoholic.</li>' +
-                '<li>I will not allow customers to leave the premises with any alcoholic beverage. If I suspect that someone is intoxicated, I will alert management immediately.</li>' +
-                '<li>I will not come to work after drinking alcoholic beverages nor will I consume alcoholic beverages during working hours.</li>' +
-                '<li>I will not engage in the use, sale or trafficking of controlled substances on the premises and will immediately report such violation to management.</li>' +
+                // ══════════════════════════════════════════════════════
+                // PAGE 4 — Alcohol Awareness Acknowledgment
+                // ══════════════════════════════════════════════════════
+                '<div style="' + PB + FONT + 'font-size:12px;padding:0.4in 0.7in;min-height:10.5in;background:#fff;">' +
+                '<div style="text-align:center;margin-bottom:24px;">' +
+                '<div style="font-size:46px;font-weight:900;font-family:Georgia,serif;letter-spacing:-3px;line-height:1;margin-bottom:4px;">Iron Age</div>' +
+                '</div>' +
+                '<div style="text-align:center;font-size:15px;font-weight:bold;margin-bottom:28px;line-height:1.4;">' +
+                'Iron Age Korean Steakhouse Restaurant Alcohol Awareness Training<br>Program Employee Acknowledgment Form' +
+                '</div>' +
+                '<p style="margin-bottom:20px;font-size:13px;">As part of the condition of my employment by the Iron Age Korean Steakhouse, I understand and agree to the following rules about the sale of alcoholic beverages:</p>' +
+                '<ol style="margin-left:24px;font-size:12.5px;line-height:1.7;margin-bottom:20px;">' +
+                '<li style="margin-bottom:8px;">I will not sell alcoholic beverages to any person under 21 years old.' +
+                '<ul style="list-style-type:disc;margin-left:20px;"><li>If the person does not appear to be at least 40 years old, I will ask for identification and if there is any doubt about the person\'s age, I will not make the sale.</li></ul></li>' +
+                '<li style="margin-bottom:8px;">Only the following forms of I.D. are acceptable:' +
+                '<ul style="list-style-type:disc;margin-left:20px;"><li>Valid Driver\'s License</li><li>Valid State I.D. Card</li><li>Valid Passport</li></ul></li>' +
+                '<li style="margin-bottom:8px;">I will not knowingly sell alcoholic beverages to any adult for use by individuals under the age of 21. If I suspect that this is the purpose, I will not make the sale.</li>' +
+                '<li style="margin-bottom:8px;">I understand that it is a violation of state law to serve any person who is intoxicated or a known alcoholic.</li>' +
+                '<li style="margin-bottom:8px;">I will not allow customers to leave the premises with any alcoholic beverage. If I suspect that someone is intoxicated, I will alert management immediately.</li>' +
+                '<li style="margin-bottom:8px;">I will not come to work after drinking alcoholic beverages nor will I consume alcoholic beverages during working hours.</li>' +
+                '<li style="margin-bottom:8px;">I will not engage in the use, sale or trafficking of controlled substances on the premises and will immediately report such violation to management.</li>' +
                 '</ol>' +
-                '<p style="margin:20px 0;">By signing below, I represent that I understand that failure to comply with these policies may result disciplinary procedures, to include termination.</p>' +
-                '<table style="width:100%;border-collapse:collapse;margin-top:30px;">' +
+                '<p style="margin-bottom:32px;font-size:12.5px;">By signing below, I represent that I understand that failure to comply with these policies may result disciplinary procedures, to include termination.</p>' +
+                '<table style="width:100%;border-collapse:collapse;margin-top:10px;">' +
                 '<tr>' +
-                '<td style="width:60%;padding:8px 0;">Employee Name &nbsp;<u>&nbsp;&nbsp;&nbsp;<b>' + (emp.name||'') + '</b>&nbsp;&nbsp;&nbsp;</u></td>' +
-                '<td style="width:40%;padding:8px 0;">Date &nbsp;<u>&nbsp;&nbsp;&nbsp;<b>' + d.date + '</b>&nbsp;&nbsp;&nbsp;</u></td>' +
+                '<td style="width:55%;padding:6px 0;">Employee Name <span style="display:inline-block;border-bottom:1px solid #000;min-width:180px;padding:0 4px;"><b>' + (emp.name||'') + '</b></span></td>' +
+                '<td style="width:45%;padding:6px 0;">Date <span style="display:inline-block;border-bottom:1px solid #000;min-width:100px;padding:0 4px;"><b>' + d.date + '</b></span></td>' +
                 '</tr>' +
-                '<tr><td colspan="2" style="padding-top:16px;">' +
-                '<div style="position:relative;border-bottom:1px solid #000;height:50px;width:60%;">' + empSign + '</div>' +
-                'Employee Signature' +
+                '<tr><td colspan="2" style="padding-top:18px;">' +
+                'Employee Signature <div style="display:inline-block;border-bottom:1px solid #000;min-width:180px;height:46px;position:relative;vertical-align:bottom;">' + eS + '</div>' +
                 '</td></tr>' +
                 '</table></div>' +
 
-                // ════════════════════════════════════════
-                // PAGE 5 & 6: Arbitration Agreement (2 pages)
-                // ════════════════════════════════════════
-                '<div style="' + PB + 'font-family:Arial,sans-serif;color:#000;font-size:11.5px;padding:0.5in;min-height:10in;line-height:1.6;">' +
-                '<p style="font-size:10px;font-weight:bold;text-align:center;margin-bottom:10px;">IMPORTANT — ALL EMPLOYEES ARE DIRECTED TO READ THIS POLICY VERY CAREFULLY BECAUSE IT AFFECTS THEIR LEGAL RIGHTS AS EMPLOYEES OF Iron Age Rego Park LLC., HEREIN CALLED THE EMPLOYER.</p>' +
-                '<div style="text-align:center;font-weight:bold;font-size:14px;margin-bottom:14px;">ARBITRATION OF EMPLOYMENT DISPUTES</div>' +
-                '<p style="margin-bottom:10px;">Any and all alleged legal disputes, claims injuries and/or other alleged wrongdoings of any kind arising out of or relating to, either directly or indirectly, the entire course of my employment relationship with the Employer, the termination of that relationship, and any and all subsequent events relating to such employment and termination, shall be submitted exclusively to final and binding arbitration under the rules and regulations of the American Arbitration Association (AAA) for the resolution of employment disputes, as the only means for resolving any and all such disputes between me and the Employer.</p>' +
-                '<p style="margin-bottom:10px;">Such arbitration shall include, but is not limited to, claims that the Employer violated the Fair Labor Standards Act and the New York State Labor laws regarding payment of minimum wages, overtime compensation and spread of hours payment, and other federal, state, or local laws and/or common law (i.e., court decisions) which prohibit discrimination, harassment or other wrongful practices in employment based on age, color, race, disability or handicap, national origin, religion or creed, ancestry, sex, pregnancy, veteran, family and marital status, sexual orientation, and any other forms of discrimination or harassment prohibited by federal, state, and local anti-discrimination in employment laws, and also any claims of wrongful or retaliatory discharge, reporting (whistleblowing) on alleged wrongful activities by the Employer, its employees or anyone else and/or any other wrongful termination of employment, or other wrongful employment practices, action or activities, and any alleged violation of any contract or other promise, guarantee, commitment or obligation allegedly made by the Employer to me.</p>' +
-                '<p style="margin-bottom:10px;">I acknowledge my understanding that under this provision for arbitration of any employment disputes I am giving up my right to pursue any such disputes through a lawsuit in a court of law and, specifically, I am giving up my right to have any such disputes decided by a jury. I understand that I cannot bring a lawsuit over any such employment disputes but instead can only pursue them through this arbitration procedure.</p>' +
-                '<p style="margin-bottom:10px;">In this arbitration procedure I shall have the same remedies available to me as are provided by federal and state laws and common law (i.e., court decisions) which prohibit all wrongful practices in employment, including but not limited to, back and front pay and payment for lost fringe benefits, compensatory damages, damages for personal, physical and emotional injuries, including for pain, suffering and emotional distress, attorney\'s fees and costs, punitive damages and injunctive relief, where appropriate. An arbitrator can issue an order that the Employer take some action or refrain from taking some action relating to my employment or termination and any subsequent events.</p>' +
-                '<p style="margin-bottom:10px;">The arbitrator, as appointed by AAA, shall schedule the times, dates and locations of the arbitration hearings, shall provide each party with a reasonable opportunity for prehearing discovery of information relevant to the claims and defenses raised in the arbitration and shall otherwise insure fairness and due process in the arbitration process and hearings, all in accordance with the AAA\'s rules and regulations for the arbitration of employment disputes.</p>' +
+                // ══════════════════════════════════════════════════════
+                // PAGE 5 — Arbitration p.1  (Times New Roman style)
+                // ══════════════════════════════════════════════════════
+                '<div style="' + PB + FONT + 'font-size:12px;font-family:\'Times New Roman\',Times,serif;padding:0.8in 1in;min-height:10.5in;background:#fff;line-height:1.6;">' +
+                '<div style="text-align:center;font-weight:bold;text-decoration:underline;font-size:14px;margin-bottom:16px;">ARBITRATION OF EMPLOYMENT DISPUTES</div>' +
+                '<div style="text-align:left;font-weight:bold;font-size:12px;margin-bottom:20px;">[IMPORTANT-ALL EMPLOYEES ARE DIRECTED TO READ THIS POLICY VERY CAREFULLY BECAUSE IT AFFECTS THEIR LEGAL RIGHTS AS EMPOYEES OF Iron Age Rego Park LLC., HEREIN CALLED THE EMPLOYER.]</div>' +
+                '<p style="text-indent:40px;margin-bottom:12px;">Any and all alleged legal disputes, claims injuries and/or other alleged wrongdoings of any kind arising out of or relating to, either directly or indirectly, the entire course of my employment relationship with the Employer, the termination of that relationship, and any and all subsequent events relating to such employment and termination, shall be submitted exclusively to final and binding arbitration under the rules and regulations of the American Arbitration Association (AAA) for the resolution of employment disputes, as the only means for resolving any and all such disputes between me and the Employer.</p>' +
+                '<p style="text-indent:40px;margin-bottom:12px;">Such arbitration shall include, but is not limited to, claims that the Employer violated the Fair Labor Standards Act and the New York State Labor laws regarding payment of minimum wages, overtime compensation and spread of hours payment, and other federal, state, or local laws and/or common law, (i.e., court decisions) which prohibit discrimination, harassment or other wrongful practices in employment based on age, color, race, disability or handicap, national origin, religion or creed, ancestry, sex, pregnancy, veteran, family and marital status, sexual orientation, and any other forms of discrimination or harassment prohibited by federal, state, and local anti-discrimination in employment laws, and also any claims of wrongful or retaliatory discharge, reporting (whistleblowing) on alleged wrongful activities by the Employer, its employees or anyone else and/or any other wrongful termination of employment, or other wrongful employment practices, action or activities, and any alleged violation of any contract or other promise, guarantee, commitment or obligation allegedly made by the Employer to me.</p>' +
+                '<p style="text-indent:40px;margin-bottom:12px;">I acknowledge my understanding that under this provision for arbitration of any employment disputes I am giving up my right to pursue any such disputes through a lawsuit in a court of law and, specifically, I am giving up my right to have any such disputes decided by a jury.  I understand that I cannot bring a lawsuit over any such employment disputes but instead can only pursue them through this arbitration procedure.</p>' +
+                '<p style="text-indent:40px;margin-bottom:12px;">In this arbitration procedure I shall have the same remedies available to me as are provided by federal and state laws and common law (i.e., court decisions) which prohibit all wrongful practices in employment, including but not limited to, back and front pay and payment for lost fringe benefits, compensatory damages, damages for personal, physical and emotional injuries, including for pain, suffering and emotional distress, attorney\'s fees and costs, punitive damages and injunctive relief, where appropriate.  An arbitrator can issue an order that the Employer take some action or refrain from taking some action relating to my employment or termination and any subsequent events.</p>' +
+                '<p style="text-indent:40px;margin-bottom:12px;">The arbitrator, as appointed by AAA, shall schedule the times, dates and locations of the arbitration hearings, shall provide each party with a reasonable opportunity for prehearing discovery of information relevant to the claims and defenses raised in the arbitration and shall</p>' +
+                '<div style="text-align:center;margin-top:30px;font-size:11px;">1</div>' +
                 '</div>' +
-                '<div style="font-family:Arial,sans-serif;color:#000;font-size:11.5px;padding:0.5in;min-height:10in;line-height:1.6;">' +
-                '<p style="margin-bottom:10px;">For issues involving prehearing discovery, procedures before and during the hearing, and admissibility of evidence and other evidentiary matters which are not addressed by these rules and regulations, the arbitrator shall be guided, but not controlled, by the Federal Rules of Civil Procedure and the Federal Rules of Evidence. In seeking such guidance from these Rules the arbitrator shall balance the needs of fairness and due process against the purposes of arbitration to provide a quicker, less costly and less cumbersome process than the courts for the resolution of employment disputes.</p>' +
-                '<p style="margin-bottom:10px;">I also understand that if I want to bring any claim relating to my employment against the Employer under this arbitration procedure, I must deliver a written demand for arbitration to the Employer at its corporate headquarters.</p>' +
-                '<p style="margin-bottom:10px;">I and the Employer are entitled to be represented by attorneys in this arbitration process and the cost of the arbitration will be shared in accordance with the rules by the American Arbitration Association.</p>' +
-                '<p style="margin-bottom:10px;">I specifically acknowledge my complete understanding and agreement that the Employer has the absolute right to proceed in court to obtain an order from a judge directing that I must use this arbitration procedure as the only legal method for resolving any and all disputes between me and the Employer concerning my employment.</p>' +
-                '<p style="margin-bottom:10px;">I acknowledge my understanding that this provision for arbitration of any and all employment disputes is a condition of the Employer\'s offer of employment or continued employment with the Employer, and my agreement to this provision is in consideration (i.e. in exchange or return) for such offer of employment or continued employment by the Employer.</p>' +
-                '<table style="width:100%;border-collapse:collapse;margin-top:30px;">' +
-                '<tr>' +
-                '<td style="width:50%;padding:8px 0;vertical-align:bottom;">' +
-                '<div style="border-bottom:1px solid #000;height:50px;position:relative;">' + empSign + '</div>' +
-                'Employee\'s Name (Print) / Signature of Employee<br><br><b>' + (emp.name||'') + '</b>' +
-                '</td>' +
-                '<td style="width:50%;padding:8px 0 8px 20px;vertical-align:bottom;">' +
-                '<div style="border-bottom:1px solid #000;height:50px;display:flex;align-items:flex-end;"><b>' + d.date + '</b></div>' +
-                'Date' +
-                '</td>' +
-                '</tr>' +
-                '</table></div>';
 
+                // ══════════════════════════════════════════════════════
+                // PAGE 6 — Arbitration p.2  (signature lines matching original)
+                // ══════════════════════════════════════════════════════
+                '<div style="' + FONT + 'font-size:12px;font-family:\'Times New Roman\',Times,serif;padding:0.8in 1in;min-height:10.5in;background:#fff;line-height:1.6;">' +
+                '<p style="margin-bottom:12px;">otherwise insure fairness and due process in the arbitration process and hearings, all in accordance with the AAA\'s rules and regulations for the arbitration of employment disputes.</p>' +
+                '<p style="text-indent:40px;margin-bottom:12px;">For issues involving prehearing discovery, procedures before and during the hearing, and admissibility of evidence and other evidentiary matters which are not addressed by these rules and regulations, the arbitrator shall be guided, but not controlled, by the Federal Rules of Civil Procedure and the Federal Rules of Evidence.  In seeking such guidance from these Rules the arbitrator shall balance the needs of fairness and due process against the purposes of arbitration to provide a quicker, less costly and less cumbersome process than the courts for the resolution of employment disputes.</p>' +
+                '<p style="text-indent:40px;margin-bottom:12px;">I also understand that if I want to bring any claim relating to my employment against the Employer under this arbitration procedure, I must deliver a written demand for arbitration to the Employer at its corporate headquarters.</p>' +
+                '<p style="text-indent:40px;margin-bottom:12px;">I and the Employer are entitled to be represented by attorneys in this arbitration process and the cost of the arbitration will be shared in accordance with the rules by the American Arbitration Association.</p>' +
+                '<p style="text-indent:40px;margin-bottom:12px;">I specifically acknowledge my complete understanding and agreement that the Employer has the absolute right to proceed in court to obtain an order from a judge directing that I must use this arbitration procedure as the only legal method for resolving any and all disputes between me and the Employer concerning my employment.</p>' +
+                '<p style="text-indent:40px;margin-bottom:12px;">I acknowledge my understanding that this provision for arbitration of any and all employment disputes is a condition of the Employer\'s offer of employment or continued employment with the Employer, and my agreement to this provision is in consideration (i.e. in exchange or return) for such offer of employment or continued employment by the Employer.</p>' +
+                // signature block matching original layout
+                '<div style="margin-top:40px;">' +
+                '<div style="display:flex;justify-content:space-between;margin-bottom:6px;">' +
+                '<div style="width:42%;border-bottom:1px solid #000;height:32px;">&nbsp;</div>' +
+                '<div style="width:42%;border-bottom:1px solid #000;height:32px;"><b>' + (emp.name||'') + '</b></div>' +
+                '</div>' +
+                '<div style="display:flex;justify-content:space-between;margin-bottom:22px;">' +
+                '<div style="width:42%;"></div>' +
+                '<div style="width:42%;font-size:11px;">Employee\'s Name (Print)</div>' +
+                '</div>' +
+                '<div style="display:flex;justify-content:space-between;margin-bottom:6px;">' +
+                '<div style="width:42%;">By:<span style="display:inline-block;border-bottom:1px solid #000;min-width:240px;height:32px;position:relative;vertical-align:bottom;">' + eS + '</span></div>' +
+                '<div style="width:42%;border-bottom:1px solid #000;height:32px;">&nbsp;</div>' +
+                '</div>' +
+                '<div style="display:flex;justify-content:space-between;margin-bottom:22px;">' +
+                '<div style="width:42%;"></div>' +
+                '<div style="width:42%;font-size:11px;">Signature of Employee</div>' +
+                '</div>' +
+                '<div style="display:flex;justify-content:space-between;margin-bottom:6px;">' +
+                '<div style="width:42%;border-bottom:1px solid #000;height:32px;display:flex;align-items:flex-end;"><b>' + d.date + '</b></div>' +
+                '<div style="width:42%;border-bottom:1px solid #000;height:32px;display:flex;align-items:flex-end;"><b>' + eD + '</b></div>' +
+                '</div>' +
+                '<div style="display:flex;justify-content:space-between;">' +
+                '<div style="width:42%;font-size:11px;">Date</div>' +
+                '<div style="width:42%;font-size:11px;">Date</div>' +
+                '</div></div>' +
+                '<div style="text-align:center;margin-top:30px;font-size:11px;">2</div>' +
+                '</div>';
             } else if (doc.type === 'DEPOSIT') {
                 // ── Equipment Deposit print layout ──
                 var empSignHtml2 = d.empSign ? '<img src="' + d.empSign + '" style="position:absolute;bottom:2px;left:0;max-height:50px;max-width:200px;">' : '';
