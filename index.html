@@ -253,6 +253,10 @@
                         <p class="text-textMuted text-xs md:text-sm">Manage staff and their records.</p>
                         <button onclick="openEmpForm()" class="w-full sm:w-auto justify-center bg-primary text-white px-4 py-3 md:py-2 rounded-lg font-bold flex items-center gap-2 transition shrink-0"><span class="material-symbols-outlined">person_add</span> Add Employee</button>
                     </div>
+                    <div class="relative">
+                        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-textMuted text-[20px]">search</span>
+                        <input type="text" id="emp-search" placeholder="Search employees..." oninput="filterEmployees(this.value)" class="w-full bg-surface border border-white/10 rounded-lg pl-10 pr-4 py-3 text-white placeholder-textMuted focus:border-primary outline-none">
+                    </div>
                     <div id="emp-editor-section" class="hidden space-y-4 md:space-y-6">
                         <form id="emp-form" class="glass-panel p-4 md:p-6 rounded-xl border border-primary/30 w-full" onsubmit="saveEmployee(event)">
                             <!-- FIX #8: title now dynamically set to "Add Employee" or "Edit Employee" -->
@@ -562,6 +566,10 @@
                         <p class="text-xs md:text-sm text-textMuted">Store manuals and reference PDFs for quick access.</p>
                         <button onclick="openPdfForm()" class="w-full sm:w-auto bg-blue-600 text-white px-4 py-2 rounded-lg font-bold flex items-center justify-center gap-2"><span class="material-symbols-outlined">upload_file</span> Upload PDF</button>
                     </div>
+                    <div class="relative">
+                        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-textMuted text-[20px]">search</span>
+                        <input type="text" id="pdf-search" placeholder="Search saved files..." oninput="filterPdfs(this.value)" class="w-full bg-surface border border-white/10 rounded-lg pl-10 pr-4 py-3 text-white placeholder-textMuted focus:border-primary outline-none">
+                    </div>
                     <form id="pdf-form" class="hidden glass-panel p-4 md:p-6 rounded-xl border border-blue-500/30 mb-6 w-full" onsubmit="savePdfDoc(event)">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                             <input type="text" id="pdf-title" required class="md:col-span-2 bg-surface border border-white/10 rounded p-3 text-white" placeholder="Document Title">
@@ -580,6 +588,10 @@
                     <div class="flex justify-between items-center">
                         <p class="text-xs md:text-sm text-textMuted">Store staff ID cards, health certificates, and other documents.</p>
                         <button onclick="openGeneralFileForm()" class="bg-primary text-white px-4 py-2 rounded-lg font-bold flex items-center gap-2 transition shrink-0"><span class="material-symbols-outlined">add_to_photos</span> Upload File</button>
+                    </div>
+                    <div class="relative">
+                        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-textMuted text-[20px]">search</span>
+                        <input type="text" id="staffdoc-search" placeholder="Search staff documents..." oninput="filterStaffDocs(this.value)" class="w-full bg-surface border border-white/10 rounded-lg pl-10 pr-4 py-3 text-white placeholder-textMuted focus:border-primary outline-none">
                     </div>
                     <form id="file-upload-form" class="hidden glass-panel p-4 md:p-6 rounded-xl border border-primary/30 mb-6" onsubmit="saveGeneralFile(event)">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -1051,6 +1063,11 @@
             if (!emp) return;
             document.getElementById('emp-editor-section').classList.remove('hidden');
             document.getElementById('emp-form-title').textContent = 'Edit Employee';
+            // Scroll to top of main scroll area so form is visible
+            setTimeout(function() {
+                var scrollArea = document.getElementById('main-scroll-area');
+                if (scrollArea) scrollArea.scrollTo({ top: 0, behavior: 'smooth' });
+            }, 50);
             document.getElementById('emp-id').value = emp.id;
             document.getElementById('emp-name').value = emp.name;
             document.getElementById('emp-pos').value = emp.pos;
@@ -1418,7 +1435,8 @@
                 if (res.error) { document.getElementById('pdf-list').innerHTML = '<p class="text-danger p-4">Load error.</p>'; return; }
                 var pdfs = res.data || [];
                 document.getElementById('pdf-list').innerHTML = pdfs.map(function(pdf) {
-                    return '<div class="glass-panel p-5 rounded-xl border border-white/10 flex flex-col justify-between"><div><div class="flex items-center gap-2 mb-2 font-bold text-white text-xs">' + pdf.title + '</div><div class="text-xs text-textMuted mb-4">' + pdf.date + '</div></div><div class="flex gap-2"><button onclick="viewPdf(\'' + pdf.id + '\')" class="flex-1 bg-white/10 py-2 rounded text-xs font-bold">View</button><button onclick="deletePdf(\'' + pdf.id + '\')" class="bg-danger/20 text-danger px-3 rounded text-xs font-bold">Delete</button></div></div>';
+                    var safeTitle = pdf.title.replace(/'/g, "\\'");
+                    return '<div class="glass-panel p-5 rounded-xl border border-white/10 flex flex-col justify-between"><div><div class="flex items-center gap-2 mb-2 font-bold text-white text-xs">' + pdf.title + '</div><div class="text-xs text-textMuted mb-4">' + pdf.date + '</div></div><div class="flex gap-2"><button onclick="viewPdf(\'' + pdf.id + '\')" class="flex-1 bg-white/10 py-2 rounded text-xs font-bold">View</button><button onclick="renamePdfFile(\'' + pdf.id + '\',\'' + safeTitle + '\')" class="bg-white/10 text-white px-2 rounded text-xs font-bold">Rename</button><button onclick="deletePdf(\'' + pdf.id + '\')" class="bg-danger/20 text-danger px-3 rounded text-xs font-bold">Delete</button></div></div>';
                 }).join('') || '<p class="col-span-full text-center p-8 text-textMuted">No files uploaded.</p>';
             });
         }
@@ -1480,7 +1498,8 @@
                 document.getElementById('general-file-list').innerHTML = files.map(function(f) {
                     var emp = db.employees.find(function(x) { return x.id === f.emp_id; });
                     var empLabel = emp ? emp.name : '';
-                    return '<div class="glass-panel p-4 rounded-xl border border-white/10 flex flex-col justify-between"><div><div class="font-bold truncate text-white text-xs mb-1">' + f.title + '</div>' + (empLabel ? '<div class="text-[10px] text-primary mb-2">&#128279; ' + empLabel + '</div>' : '') + '<div class="text-[10px] text-textMuted mb-3">' + f.date + '</div></div><div class="flex gap-2"><button onclick="viewGeneralFile(\'' + f.id + '\')" class="flex-1 bg-white/10 py-2 rounded text-xs font-bold">View</button><button onclick="deleteGeneralFile(\'' + f.id + '\')" class="bg-danger/20 text-danger px-3 rounded text-xs font-bold">Delete</button></div></div>';
+                    var safeFTitle = f.title.replace(/'/g, "\\'");
+                    return '<div class="glass-panel p-4 rounded-xl border border-white/10 flex flex-col justify-between"><div><div class="font-bold truncate text-white text-xs mb-1">' + f.title + '</div>' + (empLabel ? '<div class="text-[10px] text-primary mb-2">&#128279; ' + empLabel + '</div>' : '') + '<div class="text-[10px] text-textMuted mb-3">' + f.date + '</div></div><div class="flex gap-2"><button onclick="viewGeneralFile(\'' + f.id + '\')" class="flex-1 bg-white/10 py-2 rounded text-xs font-bold">View</button><button onclick="renameStaffFile(\'' + f.id + '\',\'' + safeFTitle + '\')" class="bg-white/10 text-white px-2 rounded text-xs font-bold">Rename</button><button onclick="deleteGeneralFile(\'' + f.id + '\')" class="bg-danger/20 text-danger px-3 rounded text-xs font-bold">Delete</button></div></div>';
                 }).join('') || '<p class="col-span-full text-center p-8 text-textMuted">No files uploaded.</p>';
             });
         }
@@ -1532,7 +1551,7 @@
                     supa.from('staff_files').select('*')
                 ]);
                 var backupData = {
-                    version: "5.0.4",
+                    version: "5.0.5",
                     settings:    results[3].data ? results[3].data.data : db.settings,
                     employees:   (results[0].data || []).map(function(r) { return r.data; }),
                     docs:        results[1].data || [],
@@ -1990,7 +2009,7 @@
                 // ══════════════════════════════════════════════════════
                 // PAGE 4 — Alcohol Awareness Acknowledgment
                 // ══════════════════════════════════════════════════════
-                '<div style="' + PB + FONT + 'font-size:12px;padding:0.4in 0.7in;background:#fff;">' +
+                '<div style="' + FONT + 'font-size:12px;padding:0.4in 0.7in;background:#fff;page-break-before:always;">' +
                 '<div style="text-align:center;margin-bottom:24px;">' +
                 '<div style="font-size:46px;font-weight:900;font-family:Georgia,serif;letter-spacing:-3px;line-height:1;margin-bottom:4px;">Iron Age</div>' +
                 '</div>' +
@@ -2023,7 +2042,7 @@
                 // ══════════════════════════════════════════════════════
                 // PAGE 5 — Arbitration p.1  (Times New Roman style)
                 // ══════════════════════════════════════════════════════
-                '<div style="' + FONT + 'font-size:12px;font-family:\'Times New Roman\',Times,serif;padding:0.8in 1in;background:#fff;line-height:1.6;page-break-after:avoid;">' +
+                '<div style="' + FONT + 'font-size:12px;font-family:\'Times New Roman\',Times,serif;padding:0.8in 1in;background:#fff;line-height:1.6;page-break-before:always;page-break-after:avoid;">' +
                 '<div style="text-align:center;font-weight:bold;text-decoration:underline;font-size:14px;margin-bottom:16px;">ARBITRATION OF EMPLOYMENT DISPUTES</div>' +
                 '<div style="text-align:left;font-weight:bold;font-size:12px;margin-bottom:20px;">[IMPORTANT-ALL EMPLOYEES ARE DIRECTED TO READ THIS POLICY VERY CAREFULLY BECAUSE IT AFFECTS THEIR LEGAL RIGHTS AS EMPOYEES OF Iron Age Rego Park LLC., HEREIN CALLED THE EMPLOYER.]</div>' +
                 '<p style="text-indent:40px;margin-bottom:12px;">Any and all alleged legal disputes, claims injuries and/or other alleged wrongdoings of any kind arising out of or relating to, either directly or indirectly, the entire course of my employment relationship with the Employer, the termination of that relationship, and any and all subsequent events relating to such employment and termination, shall be submitted exclusively to final and binding arbitration under the rules and regulations of the American Arbitration Association (AAA) for the resolution of employment disputes, as the only means for resolving any and all such disputes between me and the Employer.</p>' +
@@ -2195,6 +2214,58 @@
                     openPreview(currentPreviewDocId);
                 });
             }
+        }
+
+        /* ── Search Filter Functions ── */
+        function filterEmployees(query) {
+            var q = query.toLowerCase().trim();
+            var cards = document.querySelectorAll('#emp-list > div');
+            cards.forEach(function(card) {
+                var name = card.querySelector('.font-bold') ? card.querySelector('.font-bold').textContent.toLowerCase() : '';
+                var pos  = card.querySelector('.text-textMuted') ? card.querySelector('.text-textMuted').textContent.toLowerCase() : '';
+                card.style.display = (!q || name.includes(q) || pos.includes(q)) ? '' : 'none';
+            });
+        }
+
+        function filterPdfs(query) {
+            var q = query.toLowerCase().trim();
+            var cards = document.querySelectorAll('#pdf-list > div');
+            cards.forEach(function(card) {
+                var title = card.textContent.toLowerCase();
+                card.style.display = (!q || title.includes(q)) ? '' : 'none';
+            });
+        }
+
+        function filterStaffDocs(query) {
+            var q = query.toLowerCase().trim();
+            var cards = document.querySelectorAll('#general-file-list > div');
+            cards.forEach(function(card) {
+                var title = card.textContent.toLowerCase();
+                card.style.display = (!q || title.includes(q)) ? '' : 'none';
+            });
+        }
+
+        /* ── Rename File Functions (UPDATE 3) ── */
+        function renamePdfFile(id, currentTitle) {
+            var newTitle = prompt('Rename file:', currentTitle);
+            if (!newTitle || newTitle.trim() === '' || newTitle === currentTitle) return;
+            newTitle = newTitle.trim();
+            supa.from('pdf_files').update({ title: newTitle }).eq('id', id).then(function(res) {
+                if (res.error) { showToast('Rename failed: ' + res.error.message); return; }
+                showToast('File renamed.');
+                renderPdfs();
+            });
+        }
+
+        function renameStaffFile(id, currentTitle) {
+            var newTitle = prompt('Rename file:', currentTitle);
+            if (!newTitle || newTitle.trim() === '' || newTitle === currentTitle) return;
+            newTitle = newTitle.trim();
+            supa.from('staff_files').update({ title: newTitle }).eq('id', id).then(function(res) {
+                if (res.error) { showToast('Rename failed: ' + res.error.message); return; }
+                showToast('File renamed.');
+                renderGeneralFiles();
+            });
         }
 
         /* ══════════════════════════════════════════════
